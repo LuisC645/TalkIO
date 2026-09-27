@@ -58,7 +58,7 @@ export function DashboardPage() {
   const goalMinutes = profile?.daily_goal_minutes ?? 25
 
   return (
-    <div className="flex min-w-0 flex-col gap-10">
+    <div className="animate-stagger flex min-w-0 flex-col gap-10">
       <PageHeader
         eyebrow={formatLong(today)}
         title="Progreso"
@@ -87,7 +87,7 @@ export function DashboardPage() {
 
       {/* Desde xl: panel lateral fijo de amigos a la derecha; antes, se abre con el botón de amigos */}
       <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-8">
-        <div className="flex min-w-0 flex-col gap-10">
+        <div className="animate-stagger flex min-w-0 flex-col gap-10">
           <SummaryStrip
             loading={progress.isPending}
             metrics={[
@@ -170,7 +170,7 @@ export function DashboardPage() {
         </div>
 
         {/* Panel lateral: notificaciones y amigos, cada card con su propio desplazamiento */}
-        <aside aria-label="Notificaciones y amigos" className="hidden xl:block">
+        <aside aria-label="Notificaciones y amigos" className="animate-stagger hidden xl:block">
           <div className="sticky top-24 flex max-h-[calc(100dvh-8rem)] flex-col gap-4">
             <div className="flex max-h-[45%] min-h-0 shrink-0 flex-col overflow-hidden rounded-[22px] bg-surface">
               <NotificationsPanel className="flex-1" />

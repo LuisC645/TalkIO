@@ -46,12 +46,12 @@ export function WeekSummary({ stats, today, loading }: Props) {
               </span>
               <span
                 className={cn(
-                  'flex size-8 items-center justify-center rounded-full sm:size-9',
+                  'flex size-7 items-center justify-center rounded-full',
                   d?.goal_met ? 'bg-accent text-white' : active ? 'bg-accent/20' : future ? 'bg-fill/50' : 'bg-fill',
-                  isToday && 'ring-2 ring-label ring-offset-2 ring-offset-surface',
+                  isToday && 'ring-[1.5px] ring-label ring-offset-2 ring-offset-surface',
                 )}
               >
-                {d?.goal_met && <CheckIcon className="size-4" />}
+                {d?.goal_met && <CheckIcon className="size-3.5" />}
               </span>
             </li>
           )

@@ -5,16 +5,19 @@ import { LandingPage } from '@/features/landing/pages/LandingPage'
 import { RequireAuth } from './guards/RequireAuth'
 import { RequireOnboarding } from './guards/RequireOnboarding'
 import { AppLayout } from './layouts/AppLayout'
+import { RouteError } from './RouteError'
 
 // Las pantallas autenticadas se cargan bajo demanda (la landing queda liviana)
 export const router = createBrowserRouter([
-  { path: '/', element: <LandingPage /> },
+  { path: '/', element: <LandingPage />, errorElement: <RouteError /> },
   { path: '/login', element: <Navigate to="/" replace /> },
   // Las notificaciones ahora son un cajón (campana); la ruta antigua lleva al inicio
   { path: '/notifications', element: <Navigate to="/dashboard" replace /> },
   { path: '/auth/callback', element: <AuthCallbackPage /> },
   {
     element: <RequireAuth />,
+    // Cualquier error en una pantalla interna → recarga (versión nueva) o inicio de sesión
+    errorElement: <RouteError />,
     HydrateFallback: FullScreenSpinner,
     children: [
       {

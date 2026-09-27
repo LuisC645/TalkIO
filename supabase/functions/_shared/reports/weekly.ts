@@ -67,7 +67,7 @@ export function templateReport(s: WeeklyStats, name: string | null): string {
 
 /**
  * Asegura el reporte de la semana anterior (lunes a domingo, hora local del usuario).
- * Redacta con IA si está disponible; si no, usa la plantilla con los datos reales.
+ * Redacta con IA si hubo actividad y la IA está disponible; si no, usa la plantilla con los datos reales.
  * Devuelve el reporte creado o null si ya existía / no corresponde.
  */
 export async function ensureWeeklyReport(admin: SupabaseClient, userId: string) {
@@ -89,7 +89,8 @@ export async function ensureWeeklyReport(admin: SupabaseClient, userId: string) 
 
   let content = templateReport(stats, firstName)
   let model = 'plantilla'
-  try {
+  // Semana sin actividad: la plantilla basta (no se gasta una petición de IA en "no hubo actividad")
+  if (stats.totals.days_active > 0) try {
     const res = await callAI(admin, { userId, functionName: 'weekly-report' }, {
       tier: 'standard',
       system: SYSTEM,

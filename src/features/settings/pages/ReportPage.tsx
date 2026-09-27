@@ -11,7 +11,7 @@ export function ReportPage() {
   const { data, isPending, isError } = useWeeklyReport(reportId)
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="animate-stagger mx-auto flex max-w-2xl flex-col gap-6">
       <Link to="/settings" className="flex min-h-11 w-fit items-center gap-1 text-callout font-medium text-link">
         <svg aria-hidden viewBox="0 0 20 20" className="size-5 fill-none stroke-current stroke-2">
           <path d="m12.5 4.5-5.5 5.5 5.5 5.5" strokeLinecap="round" strokeLinejoin="round" />

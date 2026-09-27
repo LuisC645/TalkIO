@@ -3,6 +3,16 @@ import { create } from 'zustand'
 import { queryClient } from '@/lib/queryClient'
 import { supabase } from '@/lib/supabase'
 
+/** Error de sesión inválida (no un fallo de red: sin conexión se conserva la sesión) */
+export function isInvalidSession(error: { status?: number; name?: string; message?: string; code?: string }) {
+  return (
+    error.status === 401 ||
+    error.status === 403 ||
+    error.name === 'AuthSessionMissingError' ||
+    /jwt expired|invalid jwt|refresh token|session.*not.*found|user.*not.*found/i.test(`${error.code ?? ''} ${error.message ?? ''}`)
+  )
+}
+
 type AuthState = {
   session: Session | null
   user: User | null
@@ -20,7 +30,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   init: () => {
     supabase.auth
       .getSession()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
+        // La sesión guardada puede haber caducado o cerrado en otro dispositivo: se confirma con
+        // el servidor antes de entrar. Si no es válida → sin sesión (RequireAuth lleva al inicio).
+        if (data.session) {
+          const { error } = await supabase.auth.getUser()
+          if (error && isInvalidSession(error)) {
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined)
+            return set({ session: null, user: null, initialized: true })
+          }
+        }
         set({ session: data.session, user: data.session?.user ?? null, initialized: true })
       })
       // Almacenamiento bloqueado (navegación privada estricta, iframes): se sigue sin sesión

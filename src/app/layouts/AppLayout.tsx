@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react'
+import { useEffect, useState, type ComponentType, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { BookIcon, CardsIcon, ChartIcon, GearIcon, PencilIcon } from '@/components/ui/icons'
 import { Wordmark } from '@/components/ui/Wordmark'
@@ -36,6 +36,13 @@ export function AppLayout() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [location.pathname])
 
+  // Tocar el logo o la pestaña de la pantalla actual sube arriba del todo (convención de iOS)
+  function scrollTopIfActive(e: MouseEvent, to: string) {
+    if (location.pathname !== to) return
+    e.preventDefault()
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  }
+
   const initial = (profile?.display_name ?? '?').trim().charAt(0).toUpperCase()
 
   return (
@@ -48,7 +55,13 @@ export function AppLayout() {
         )}
       >
         <div className="mx-auto grid h-16 max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 lg:px-10">
-          <NavLink to="/dashboard" aria-label="TalkIO, progreso" className="flex w-fit items-center self-stretch rounded-full">
+          <NavLink
+            to="/dashboard"
+            aria-label="TalkIO, progreso"
+            // Ya en Progreso: el logo sube arriba del todo (como tocar la barra de estado en iOS)
+            onClick={(e) => scrollTopIfActive(e, '/dashboard')}
+            className="flex w-fit items-center self-stretch rounded-full"
+          >
             <Wordmark size="lg" />
           </NavLink>
           <nav aria-label="Secciones">
@@ -57,6 +70,7 @@ export function AppLayout() {
                 <li key={to}>
                   <NavLink
                     to={to}
+                    onClick={(e) => scrollTopIfActive(e, to)}
                     className={({ isActive }) =>
                       cn(
                         'flex min-h-9 items-center rounded-full px-4 text-callout transition-[background-color,color] duration-150',
@@ -103,6 +117,7 @@ export function AppLayout() {
             <li key={to}>
               <NavLink
                 to={to}
+                onClick={(e) => scrollTopIfActive(e, to)}
                 className={({ isActive }) =>
                   cn(
                     'flex h-full flex-col items-center justify-center gap-0.5 rounded-full text-[0.6875rem] transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.96]',
