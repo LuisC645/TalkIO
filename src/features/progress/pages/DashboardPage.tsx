@@ -176,7 +176,7 @@ export function DashboardPage() {
               <NotificationsPanel className="flex-1" />
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-surface">
-              <FriendsPanel className="flex-1" canAdd={false} />
+              <FriendsPanel className="flex-1" friendsOnly />
             </div>
           </div>
         </aside>

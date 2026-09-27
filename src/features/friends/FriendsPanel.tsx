@@ -10,10 +10,18 @@ import { useAddFriend, useFriendRequests, useFriends, useRemoveFriend, useRespon
  * Amigos por solicitud: agregar por @usuario envía una solicitud; quien la recibe la acepta o
  * la rechaza. Aceptada, los dos ven la racha y el nivel del otro (solo eso). Quitar un amigo
  * pide confirmación (el botón cambia a "¿Quitar?" y se confirma con un segundo toque).
- * Se usa en el panel lateral del Progreso y en el cajón que abre el botón de amigos; `canAdd`
- * en false (panel del Progreso) deja solo la lista: se agrega desde el cajón del banner.
+ * Se usa en el panel lateral del Progreso y en el cajón que abre el botón de amigos; `friendsOnly`
+ * (panel del Progreso) deja solo los amigos actuales: agregar y las solicitudes van en el cajón del banner.
  */
-export function FriendsPanel({ onClose, className, canAdd = true }: { onClose?: () => void; className?: string; canAdd?: boolean }) {
+export function FriendsPanel({
+  onClose,
+  className,
+  friendsOnly = false,
+}: {
+  onClose?: () => void
+  className?: string
+  friendsOnly?: boolean
+}) {
   const { data: profile } = useProfile()
   const friends = useFriends()
   const requests = useFriendRequests()
@@ -24,8 +32,8 @@ export function FriendsPanel({ onClose, className, canAdd = true }: { onClose?: 
   const [confirm, setConfirm] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const incoming = requests.data?.incoming ?? []
-  const outgoing = requests.data?.outgoing ?? []
+  const incoming = friendsOnly ? [] : (requests.data?.incoming ?? [])
+  const outgoing = friendsOnly ? [] : (requests.data?.outgoing ?? [])
   const activeCount = friends.data?.filter((f) => f.active_today).length ?? 0
   const friendCount = friends.data?.length ?? 0
 
@@ -75,7 +83,7 @@ export function FriendsPanel({ onClose, className, canAdd = true }: { onClose?: 
         </div>
       )}
 
-      {canAdd && (
+      {!friendsOnly && (
         <form onSubmit={onSubmit} className="flex gap-2 px-5 pb-3">
           <label htmlFor="friend-username" className="sr-only">
             Usuario de tu amigo
