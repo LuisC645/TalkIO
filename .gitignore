@@ -26,3 +26,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Datos personales de la semilla (scripts/seed-user.ts): solo en tu equipo
+docs/user_seed.*

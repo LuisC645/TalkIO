@@ -3,24 +3,24 @@ import { cn } from '@/lib/cn'
 
 type Word = { text: string; tone?: 'success' | 'accent' }
 
-// Formas ya corregidas de errores reales (docs/user_seed.json) y más inglés cotidiano. Algunas
-// llevan el color de "correcto" para que el vidrio del panel tenga color que refractar.
+// Inglés general que se corrige a diario (pasados irregulares, contracciones, expresiones
+// frecuentes). Algunas llevan el color de "correcto" para que el vidrio tenga color que refractar.
 const ROWS: Word[][] = [
-  [{ text: 'went', tone: 'success' }, { text: 'degree' }, { text: 'brush' }, { text: 'I’m' }, { text: 'thought', tone: 'accent' }, { text: 'bought' }],
-  [{ text: 'an airline pilot' }, { text: 'step up', tone: 'accent' }, { text: 'last week' }, { text: 'I would rather' }],
-  [{ text: 'anything else' }, { text: 'young people', tone: 'success' }, { text: 'don’t' }, { text: 'look forward to' }],
-  [{ text: 'I am taking' }, { text: 'be more successful' }, { text: 'Valorant', tone: 'accent' }, { text: 'since 2019' }],
-  [{ text: 'work at NASA' }, { text: 'all my family', tone: 'success' }, { text: 'in the evening' }, { text: 'used to' }],
-  [{ text: 'has been' }, { text: 'I’d like to', tone: 'accent' }, { text: 'a lot of' }, { text: 'nevertheless' }, { text: 'enough' }],
-  [{ text: 'make a decision' }, { text: 'although' }, { text: 'I have lived', tone: 'success' }, { text: 'on weekends' }],
-  [{ text: 'better than' }, { text: 'get used to' }, { text: 'whose', tone: 'accent' }, { text: 'I didn’t know' }],
+  [{ text: 'went', tone: 'success' }, { text: 'thought' }, { text: 'brought' }, { text: 'I’m' }, { text: 'bought', tone: 'accent' }, { text: 'taught' }],
+  [{ text: 'look forward to' }, { text: 'make sense', tone: 'accent' }, { text: 'last week' }, { text: 'I would rather' }],
+  [{ text: 'anything else' }, { text: 'a lot of people', tone: 'success' }, { text: 'don’t' }, { text: 'by the way' }],
+  [{ text: 'I have been' }, { text: 'as soon as' }, { text: 'although', tone: 'accent' }, { text: 'since 2019' }],
+  [{ text: 'take a break' }, { text: 'every morning', tone: 'success' }, { text: 'in the evening' }, { text: 'used to' }],
+  [{ text: 'has been' }, { text: 'I’d like to', tone: 'accent' }, { text: 'enough time' }, { text: 'nevertheless' }, { text: 'yet' }],
+  [{ text: 'make a decision' }, { text: 'on the other hand' }, { text: 'I have lived', tone: 'success' }, { text: 'on weekends' }],
+  [{ text: 'better than' }, { text: 'get used to' }, { text: 'whose', tone: 'accent' }, { text: 'I didn’t know' }, { text: 'unless' }],
 ]
 
 // Duración de una vuelta por fila (s): distintas para que no se muevan en bloque
 const DURATIONS = [150, 190, 130, 210, 170, 140, 200, 160]
 
 /**
- * Fondo de la pantalla de acceso (capa de contenido, sin vidrio): tus correcciones pasando en
+ * Fondo de la pantalla de acceso (capa de contenido, sin vidrio): inglés corregido pasando en
  * horizontal, muy tenues. Las filas alternan sentido y velocidad; su número se ajusta a la altura
  * de la sección (la tarjeta de registro es más alta que la de inicio de sesión). Solo se anima
  * transform (GPU) y muy despacio; con "reducir movimiento" queda quieto.
