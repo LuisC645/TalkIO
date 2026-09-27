@@ -91,3 +91,18 @@ export function formatInterval(from: Date, to: Date): string {
   if (months < 12) return `${months} mes`
   return `${Math.round(months / 12)} a`
 }
+
+/** Cuándo vuelve la tarjeta, en lenguaje claro: "en 10 min", "mañana", "en 4 días", "en 2 meses" */
+export function formatWhen(from: Date, to: Date): string {
+  const minutes = Math.max(1, Math.round((to.getTime() - from.getTime()) / 60_000))
+  if (minutes < 60) return `en ${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 20) return `en ${hours} h`
+  const days = Math.max(1, Math.round(hours / 24))
+  if (days === 1) return 'mañana'
+  if (days < 30) return `en ${days} días`
+  const months = Math.round(days / 30)
+  if (months < 12) return months === 1 ? 'en 1 mes' : `en ${months} meses`
+  const years = Math.round(months / 12)
+  return years === 1 ? 'en 1 año' : `en ${years} años`
+}

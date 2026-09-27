@@ -5,18 +5,20 @@ import { buttonClasses } from '@/components/ui/buttonClasses'
 import { FullScreenSpinner } from '@/components/ui/FullScreenSpinner'
 import { CheckIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
-import { formatInterval, Rating, scheduler, toCard, toRecordPayload, type Grade, type SrsRow } from '@/lib/srs'
+import { formatWhen, Rating, scheduler, toCard, toRecordPayload, type Grade, type SrsRow } from '@/lib/srs'
 import { useRecordReview, useReviewQueue, type ReviewItem } from '../api'
 import { Flashcard } from '../components/Flashcard'
 import { playSound } from '@/lib/sound'
 
-const RELEARN_WINDOW_MS = 20 * 60_000 // lo que vence dentro de 20 min vuelve en esta sesión
+// Solo "Otra vez" repite la tarjeta en esta sesión, y como máximo 2 veces (así la sesión siempre
+// termina). Con las demás respuestas queda guardada y vuelve cuando le toque.
+const MAX_REPEATS = 2
 
-const GRADES: { grade: Grade; label: string; key: string; tone: string }[] = [
-  { grade: Rating.Again, label: 'Otra vez', key: '1', tone: 'text-danger' },
-  { grade: Rating.Hard, label: 'Difícil', key: '2', tone: 'text-label' },
-  { grade: Rating.Good, label: 'Bien', key: '3', tone: 'text-accent-text' },
-  { grade: Rating.Easy, label: 'Fácil', key: '4', tone: 'text-success' },
+const GRADES: { grade: Grade; label: string; hint: string; key: string; tone: string }[] = [
+  { grade: Rating.Again, label: 'Otra vez', hint: 'No la recordé', key: '1', tone: 'text-danger' },
+  { grade: Rating.Hard, label: 'Difícil', hint: 'Con esfuerzo', key: '2', tone: 'text-label' },
+  { grade: Rating.Good, label: 'Bien', hint: 'La recordé', key: '3', tone: 'text-accent-text' },
+  { grade: Rating.Easy, label: 'Fácil', hint: 'Sin dudar', key: '4', tone: 'text-success' },
 ]
 
 /**
@@ -31,6 +33,7 @@ export function ReviewSessionPage() {
   const queue = sessionQueue ?? initial ?? null
   const [revealed, setRevealed] = useState(false)
   const [stats, setStats] = useState({ reviewed: 0, again: 0, uniques: new Set<string>() })
+  const repeats = useRef(new Map<string, number>())
   const shownAt = useRef(0)
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export function ReviewSessionPage() {
     if (!current) return null
     const now = new Date()
     const preview = scheduler.repeat(toCard(current), now)
-    return Object.fromEntries(GRADES.map((g) => [g.grade, formatInterval(now, preview[g.grade].card.due)])) as Record<Grade, string>
+    return Object.fromEntries(GRADES.map((g) => [g.grade, formatWhen(now, preview[g.grade].card.due)])) as Record<Grade, string>
   }, [current])
 
   const reveal = useCallback(() => {
@@ -62,8 +65,11 @@ export function ReviewSessionPage() {
         return // el error se muestra en la barra; la tarjeta no avanza
       }
       const rest = queue.slice(1)
-      if (item.card.due.getTime() - now.getTime() < RELEARN_WINDOW_MS) {
-        rest.push({ ...current, ...(card as unknown as SrsRow) })
+      const times = repeats.current.get(current.id) ?? 0
+      if (grade === Rating.Again && times < MAX_REPEATS) {
+        repeats.current.set(current.id, times + 1)
+        // Vuelve unas tarjetas más adelante (no justo a continuación)
+        rest.splice(Math.min(rest.length, 3), 0, { ...current, ...(card as unknown as SrsRow) })
       }
       setStats((s) => ({
         reviewed: s.reviewed + 1,
@@ -166,23 +172,30 @@ export function ReviewSessionPage() {
                   Mostrar respuesta
                 </Button>
               ) : (
-                <div className="grid grid-cols-4 gap-2" role="group" aria-label="¿Qué tan bien lo recordaste?">
-                  {GRADES.map((g) => (
-                    <button
-                      key={g.grade}
-                      type="button"
-                      disabled={record.isPending}
-                      onClick={() => rate(g.grade)}
-                      className={cn(
-                        'flex min-h-14 flex-col items-center justify-center rounded-2xl bg-fill px-1 transition-[transform,background-color] duration-150 ease-out',
-                        'hover:bg-[color-mix(in_srgb,var(--fill),var(--label)_6%)] active:scale-[0.96] disabled:opacity-60',
-                      )}
-                    >
-                      <span className={cn('text-callout font-semibold', g.tone)}>{g.label}</span>
-                      <span className="text-footnote text-label-2 tabular-nums">{previews?.[g.grade]}</span>
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <p className="text-center text-footnote text-label-2">
+                    ¿Qué tan bien la recordaste? Debajo ves cuándo te la volveremos a mostrar.
+                  </p>
+                  <div className="grid grid-cols-4 gap-2" role="group" aria-label="¿Qué tan bien la recordaste?">
+                    {GRADES.map((g) => (
+                      <button
+                        key={g.grade}
+                        type="button"
+                        disabled={record.isPending}
+                        onClick={() => rate(g.grade)}
+                        aria-label={`${g.label}: ${g.hint}. Vuelve ${previews?.[g.grade] ?? ''}`}
+                        className={cn(
+                          'flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-2xl bg-fill px-1 py-2 transition-[transform,background-color] duration-150 ease-out',
+                          'hover:bg-[color-mix(in_srgb,var(--fill),var(--label)_6%)] active:scale-[0.96] disabled:opacity-60',
+                        )}
+                      >
+                        <span className={cn('text-callout leading-tight font-semibold', g.tone)}>{g.label}</span>
+                        <span className="text-[0.6875rem] leading-tight text-label-2">{g.hint}</span>
+                        <span className="text-footnote leading-tight font-medium text-label tabular-nums">{previews?.[g.grade]}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
               <p className="hidden text-center text-footnote text-label-2 sm:block">
                 {revealed ? 'Teclas 1–4 para calificar' : 'Espacio para mostrar la respuesta'}
@@ -221,7 +234,7 @@ function Summary({ reviewed, unique, again }: { reviewed: number; unique: number
         {[
           { label: 'Tarjetas', value: unique },
           { label: 'Recordadas', value: `${recalled}%` },
-          { label: 'XP', value: `+${reviewed * 2}` },
+          { label: 'XP', value: `+${reviewed}` },
         ].map((s) => (
           <div key={s.label} className="flex flex-col items-center gap-0.5 px-2">
             <dt className="text-footnote text-label-2">{s.label}</dt>
