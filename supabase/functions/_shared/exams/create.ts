@@ -2,6 +2,7 @@ import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { AIError } from '../ai/provider.ts'
 import { HttpError } from '../http.ts'
 import { pastExercisesForReview } from '../lesson/fallback.ts'
+import { levelGuidePrompt, loadLevelGuide } from '../lesson/levels.ts'
 import { buildExercise, LessonOutput, lessonJsonSchema, type BuiltExercise } from '../lesson/schema.ts'
 import { callAI } from '../usage.ts'
 import { EXAM_PROMPT_VERSION, levelExamPrompt, weeklyExamPrompt } from './prompt.ts'
@@ -96,7 +97,7 @@ export async function createExam(
         .neq('corrected_text', '—')
         .limit(12),
     ])
-    system = weeklyExamPrompt({ cefr, interests })
+    system = weeklyExamPrompt({ cefr, interests, levelGuide: levelGuidePrompt(cefr, await loadLevelGuide(admin, cefr)) })
     input = JSON.stringify({
       lessons_this_week: week.map((l) => ({ title: l.title, rule: (l.content as { rule?: { title: string } })?.rule?.title })),
       focus_errors: patterns ?? [],
@@ -113,7 +114,7 @@ export async function createExam(
       .eq('status', 'active')
       .order('priority', { ascending: false })
       .limit(6)
-    system = levelExamPrompt({ cefr, interests, target })
+    system = levelExamPrompt({ cefr, interests, target, levelGuide: levelGuidePrompt(target, await loadLevelGuide(admin, target)) })
     input = JSON.stringify({ current_level: cefr, target_level: target, learner_active_errors: patterns ?? [] })
     meta = { target_level: target, from_level: cefr, pass_threshold: LEVEL_PASS }
     title = `Examen de nivel ${target}`

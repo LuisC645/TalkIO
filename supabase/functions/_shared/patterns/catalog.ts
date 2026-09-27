@@ -45,8 +45,11 @@ export function codesForPrompt(userPatterns: { code: string; title: string }[]) 
 
 /** Foco sugerido por nivel cuando el usuario aún tiene pocos errores registrados */
 export function suggestedFocus(cefr: string): CatalogPattern[] {
-  const codes = cefr.startsWith('A')
-    ? ['do_does_base_form', 'past_tense_narration', 'articles']
+  // Respaldo si la tabla level_guides no tiene el nivel (la fuente principal es la tabla)
+  const codes = cefr.startsWith('A1')
+    ? ['third_person_s', 'do_does_base_form', 'articles']
+    : cefr.startsWith('A')
+    ? ['do_does_base_form', 'past_tense_narration', 'present_continuous_aux']
     : cefr.startsWith('B')
       ? ['present_perfect_experience', 'conditionals', 'gerund_infinitive']
       : ['conditionals', 'vocabulary_word_choice', 'gerund_infinitive']

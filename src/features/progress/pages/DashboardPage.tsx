@@ -171,10 +171,11 @@ export function DashboardPage() {
 
         {/* Panel lateral: notificaciones y amigos, cada card con su propio desplazamiento */}
         <aside aria-label="Notificaciones y amigos" className="animate-stagger hidden xl:block">
-          <div className="sticky top-24 flex max-h-[calc(100dvh-8rem)] flex-col gap-4">
-            <div className="flex max-h-[45%] min-h-0 shrink-0 flex-col overflow-hidden rounded-[22px] bg-surface">
+          <div className="sticky top-24 flex h-[calc(100dvh-8rem)] flex-col gap-4">
+            <div className="flex max-h-[30%] min-h-0 shrink-0 flex-col overflow-hidden rounded-[22px] bg-surface">
               <NotificationsPanel className="flex-1" />
             </div>
+            {/* Amigos ocupa el resto de la altura para ver más a la vez */}
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-surface">
               <FriendsPanel className="flex-1" />
             </div>

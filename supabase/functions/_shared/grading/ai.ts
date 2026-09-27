@@ -37,7 +37,7 @@ export const GradeOutput = z.object({
 })
 export type GradeOutput = z.infer<typeof GradeOutput>
 
-const BASE = `You grade answers from a Spanish-speaking adult learning English (level A2+/B1).
+const BASE = `You grade answers from a Spanish-speaking adult learning English. Judge them against the task and the learner's level (the task was written at that level); do not penalize simple but correct language.
 Be fair and encouraging, but precise:
 - Accept ANY grammatical, natural answer that fulfils the instruction, even if it differs from the model answer.
 - Ignore differences in final punctuation and capitalization of the first letter, unless the error is the lowercase pronoun "i".

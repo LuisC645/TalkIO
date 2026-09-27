@@ -1,8 +1,10 @@
-export const EXAM_PROMPT_VERSION = 'exam.v1'
+export const EXAM_PROMPT_VERSION = 'exam.v2'
 
 type Base = {
   cefr: string
   interests: string[]
+  /** Restricciones del nivel (levelGuidePrompt) */
+  levelGuide: string
 }
 
 const COMMON = `You write English EXAMS for a Spanish-speaking adult learner. Instructions and explanations in SPANISH; all English content natural and correct.
@@ -16,12 +18,17 @@ EXAM RULES:
 
 export function weeklyExamPrompt(b: Base) {
   return `${COMMON}
-WEEKLY EXAM: 10 exercises, all phase "drill", at the learner's level (${b.cefr}), covering ONLY what the learner practiced this week (given below): the rules, the focus errors and their own recent mistakes. Slightly harder than the lessons (less obvious contexts), still fair. No free_writing.
-Learner interests: ${b.interests.join(', ') || 'general'}.`
+WEEKLY EXAM: 10 exercises, all phase "drill", at the learner's level (${b.cefr}), covering ONLY what the learner practiced this week (given below): the rules, the focus errors and their own recent mistakes. Slightly harder than the lessons (less obvious contexts), still fair and within the learner's level. No free_writing.
+Learner interests: ${b.interests.join(', ') || 'general'}.
+
+${b.levelGuide}`
 }
 
 export function levelExamPrompt(b: Base & { target: string }) {
   return `${COMMON}
-LEVEL-UP EXAM: the learner is ${b.cefr} and wants to reach ${b.target}. Write 12 exercises at ${b.target} difficulty (genuinely harder than ${b.cefr}: ${b.target}-level grammar, vocabulary range and sentence complexity), phase "drill", covering the core ${b.target} grammar and vocabulary of the CEFR, plus 1 final free_writing (phase "free", min_words 90) with a ${b.target}-level task (opinion or narrative with reasons and examples). Total 13.
-Learner interests: ${b.interests.join(', ') || 'general'}.`
+LEVEL-UP EXAM: the learner is ${b.cefr} and wants to reach ${b.target}. Write 12 exercises at ${b.target} difficulty (genuinely harder than ${b.cefr}: ${b.target}-level grammar, vocabulary range and sentence complexity), phase "drill", covering the core ${b.target} grammar and vocabulary of the CEFR, plus 1 final free_writing (phase "free", min_words as in the target level reference) with a ${b.target}-level task. Total 13.
+Learner interests: ${b.interests.join(', ') || 'general'}.
+
+Reference for the TARGET level ${b.target} (write the exam with this, not above it):
+${b.levelGuide}`
 }

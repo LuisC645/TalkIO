@@ -1,10 +1,11 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { AIError } from '../ai/provider.ts'
 import { HttpError } from '../http.ts'
-import { suggestedFocus } from '../patterns/catalog.ts'
+import { CATALOG_BY_CODE, suggestedFocus, type CatalogPattern } from '../patterns/catalog.ts'
 import { callAI } from '../usage.ts'
 import { FALLBACK_PROMPT_VERSION, pastExercisesForReview } from './fallback.ts'
 import { LESSON_PROMPT_VERSION, lessonInput, lessonSystemPrompt, type LessonContext } from './prompt.ts'
+import { levelGuidePrompt, loadLevelGuide } from './levels.ts'
 import { buildExercise, LessonOutput, lessonJsonSchema, type BuiltExercise } from './schema.ts'
 
 export const FUNCTION = 'generate-lesson'
@@ -13,18 +14,37 @@ const FOCUS_COUNT = 3
 
 export type CreatedLesson = { lesson_id: string; reused: boolean; fallback?: boolean }
 
-/** Lección sin terminar (lista o en curso), la más reciente */
+/**
+ * Lección sin terminar (lista o en curso), la más reciente. Si el usuario cambió de nivel desde
+ * que se preparó y aún no la empezó, se descarta para generar una acorde al nivel nuevo.
+ */
 export async function findPendingLesson(admin: SupabaseClient, userId: string) {
-  const { data } = await admin
-    .from('lessons')
-    .select('id, status, generated_at, meta')
-    .eq('user_id', userId)
-    .eq('kind', 'lesson')
-    .in('status', ['ready', 'in_progress'])
-    .order('generated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  return data as { id: string; status: string; generated_at: string; meta: Record<string, unknown> | null } | null
+  const [{ data }, { data: profile }] = await Promise.all([
+    admin
+      .from('lessons')
+      .select('id, status, generated_at, meta, cefr_level')
+      .eq('user_id', userId)
+      .eq('kind', 'lesson')
+      .in('status', ['ready', 'in_progress'])
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin.from('profiles').select('cefr_level, cefr_plus').eq('id', userId).single(),
+  ])
+  const lesson = data as { id: string; status: string; generated_at: string; meta: Record<string, unknown> | null; cefr_level: string | null } | null
+  if (lesson?.status === 'ready' && profile?.cefr_level) {
+    const current = `${profile.cefr_level}${profile.cefr_plus ? '+' : ''}`
+    // Las lecciones anteriores a meta.cefr solo guardan el nivel base
+    const stale = typeof lesson.meta?.cefr === 'string' ? lesson.meta.cefr !== current : lesson.cefr_level !== profile.cefr_level
+    if (stale) {
+      const { count } = await admin.from('exercise_attempts').select('id', { count: 'exact', head: true }).eq('lesson_id', lesson.id)
+      if (!count) {
+        await admin.from('lessons').delete().eq('id', lesson.id).eq('status', 'ready')
+        return null
+      }
+    }
+  }
+  return lesson
 }
 
 /**
@@ -64,7 +84,7 @@ export async function createLesson(
     } catch (err) {
       if (err instanceof AIError) {
         if (!allowFallback) throw err
-        return await reviewLessonWithoutAI(admin, userId, ctx.cefrBase, meta)
+        return await reviewLessonWithoutAI(admin, userId, ctx.profile.cefr, meta)
       }
       throw err
     }
@@ -100,7 +120,7 @@ export async function createLesson(
       content: { rule: output.rule, topic_slug: output.topic_slug, focus_codes: output.focus_codes },
       model: usedModel,
       prompt_version: LESSON_PROMPT_VERSION,
-      meta,
+      meta: { ...meta, cefr: ctx.profile.cefr },
     })
     .select('id')
     .single()
@@ -151,13 +171,13 @@ async function reviewLessonWithoutAI(admin: SupabaseClient, userId: string, cefr
     .insert({
       user_id: userId,
       title: 'Repaso de tus errores',
-      cefr_level: cefr,
+      cefr_level: cefr.replace('+', ''),
       focus_pattern_ids: focus,
       status: 'ready',
       content: { rule: null, fallback: true, covers: 'Ejercicios anteriores, empezando por los que fallaste' },
       model: 'sin-ia',
       prompt_version: FALLBACK_PROMPT_VERSION,
-      meta,
+      meta: { ...meta, cefr },
     })
     .select('id')
     .single()
@@ -196,8 +216,15 @@ async function loadContext(admin: SupabaseClient, userId: string) {
   const active = allPatterns.filter((p) => p.status === 'active')
   const lastFocus = new Set<string>((recentRes.data?.[0]?.focus_pattern_ids as string[] | undefined) ?? [])
 
+  const cefrBase = profile.cefr_level ?? 'A2'
+  const cefr = `${cefrBase}${profile.cefr_plus ? '+' : ''}`
+  const guide = await loadLevelGuide(admin, cefr)
+  // Errores de estructuras por encima del nivel (p. ej. pasado para un A1) no son foco todavía
+  const blocked = new Set(guide?.blocked_patterns ?? [])
+
   // Prioridad alta y poco dominado primero; se rota lo que fue foco de la última lección
   const scored = active
+    .filter((p) => !blocked.has(p.code))
     .map((p) => ({ p, score: p.priority * 10 - p.correct_streak * 4 + Math.min(p.occurrences, 8) - (lastFocus.has(p.id) ? 12 : 0) }))
     .sort((a, b) => b.score - a.score)
   const focusRows = scored.slice(0, FOCUS_COUNT).map((s) => s.p)
@@ -226,7 +253,9 @@ async function loadContext(admin: SupabaseClient, userId: string) {
   const topicCandidates = topics.length ? topics : (topicsRes.data ?? []).slice(0, 5).map((t) => ({ ...t, status: 'pending', times: 0 }))
 
   const lc = (profile.learner_context ?? {}) as Record<string, unknown>
-  const cefrBase = profile.cefr_level ?? 'A2'
+  const levelFocus = guide?.focus_codes.length
+    ? guide.focus_codes.map((c) => CATALOG_BY_CODE.get(c)).filter((c): c is CatalogPattern => !!c)
+    : suggestedFocus(cefrBase)
 
   const context: LessonContext & {
     allPatterns: typeof allPatterns
@@ -236,10 +265,11 @@ async function loadContext(admin: SupabaseClient, userId: string) {
   } = {
     profile: {
       display_name: profile.display_name,
-      cefr: `${cefrBase}${profile.cefr_plus ? '+' : ''}`,
+      cefr,
       skills: (assessmentRes.data?.skills as Record<string, string>) ?? {},
       interests: (profile.interests as string[]) ?? [],
       learner_context: lc,
+      level_guide: levelGuidePrompt(cefr, guide),
     },
     focus: [
       ...focusRows.map((p) => ({
@@ -254,12 +284,12 @@ async function loadContext(admin: SupabaseClient, userId: string) {
           .map((e) => ({ wrong: e.wrong_text, right: e.corrected_text })),
       })),
       // Usuario nuevo con pocos errores registrados: se completa con errores típicos de su nivel
-      ...suggestedFocus(cefrBase)
+      ...levelFocus
         .filter((c) => !focusRows.some((p) => p.code === c.code))
         .slice(0, Math.max(0, FOCUS_COUNT - focusRows.length))
         .map((c) => ({ code: c.code, title: c.title, rule: c.rule, skill: c.skill, correct_streak: 0, examples: [] })),
     ],
-    otherCodes: active.filter((p) => !focusRows.includes(p)).map((p) => p.code),
+    otherCodes: active.filter((p) => !focusRows.includes(p) && !blocked.has(p.code)).map((p) => p.code),
     vocab: (vocabRows ?? []).slice(0, 6).map((v) => ({ term: v.term, wrong_form: v.wrong_form, translation: v.translation })),
     topics: topicCandidates.map((t) => ({ slug: t.slug, name: t.name, status: t.status })),
     recentTitles: (recentRes.data ?? []).map((l) => l.title),
