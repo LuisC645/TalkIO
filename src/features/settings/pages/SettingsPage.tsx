@@ -206,6 +206,39 @@ export function SettingsPage() {
         </Row>
       </GroupedList>
 
+      <GroupedList
+        header="Correo"
+        footer={`Te enviamos tu reporte semanal y un aviso si tu racha está en riesgo (entre las 19:00 y las 22:00). Llegan a ${user?.email ?? 'tu correo'}; puedes desactivarlos cuando quieras.`}
+      >
+        <Row>
+          <span className="text-body">Recibir correos</span>
+          <span className="flex items-center gap-2">
+            {savedMark('email_opt_in')}
+            <Switch
+              label="Recibir correos"
+              checked={!!profile?.email_opt_in}
+              onChange={(next) => save({ email_opt_in: next })}
+              disabled={!profile}
+            />
+          </span>
+        </Row>
+      </GroupedList>
+
+      <GroupedList header="Legal">
+        <Row>
+          <Link to="/privacidad" className="-my-2.5 flex min-h-12 w-full items-center justify-between text-body">
+            Política de privacidad
+            <Chevron />
+          </Link>
+        </Row>
+        <Row>
+          <Link to="/cookies" className="-my-2.5 flex min-h-12 w-full items-center justify-between text-body">
+            Política de cookies
+            <Chevron />
+          </Link>
+        </Row>
+      </GroupedList>
+
       <GroupedList header="Reportes semanales" footer="Cada lunes se genera el resumen de tu semana anterior.">
         {reports.isPending ? (
           <Row label="Cargando…" />
@@ -215,7 +248,10 @@ export function SettingsPage() {
           reports.data.map((r) => (
             <Row key={r.id}>
               <Link to={`/settings/reports/${r.id}`} className="-my-2.5 flex min-h-12 w-full items-center justify-between gap-3 text-body">
-                <span>{weekLabel(r.week_start, r.week_end)}</span>
+                <span>
+                  {weekLabel(r.week_start, r.week_end)}
+                  {r.model?.startsWith('prueba:') && <span className="ml-2 rounded-full bg-fill px-2 py-0.5 text-footnote font-medium text-label-2">Prueba</span>}
+                </span>
                 <span className="flex items-center gap-2 text-label-2">
                   {(r.stats as { totals?: { xp: number } })?.totals?.xp ?? 0} XP
                   <Chevron />

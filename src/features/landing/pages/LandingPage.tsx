@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { Navigate, useLocation } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { AppearanceControl } from '@/components/ui/AppearanceControl'
 import { FullScreenSpinner } from '@/components/ui/FullScreenSpinner'
 import { Wordmark } from '@/components/ui/Wordmark'
@@ -144,7 +144,16 @@ export function LandingPage() {
 
       <footer className="border-t border-separator bg-bg-grouped">
         <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-8 text-footnote text-label-2 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10">
-          <p>TalkIO · Proyecto personal de aprendizaje de inglés.</p>
+          <p>
+            TalkIO · Proyecto personal de aprendizaje de inglés. ·{' '}
+            <Link to="/privacidad" className="underline decoration-label-3/40 underline-offset-2 hover:text-label">
+              Privacidad
+            </Link>{' '}
+            ·{' '}
+            <Link to="/cookies" className="underline decoration-label-3/40 underline-offset-2 hover:text-label">
+              Cookies
+            </Link>
+          </p>
           <p className="text-label-3">
             Desarrollado por:{' '}
             <a

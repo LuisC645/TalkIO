@@ -436,3 +436,11 @@ verify_jwt = false
 
 [functions.notifications]
 verify_jwt = false
+
+# Tarea programada (pg_cron): se autentica con el secreto de Vault, no con JWT
+[functions.daily-prep]
+verify_jwt = false
+
+# Enlace de baja de los correos: se valida con una firma, no con JWT
+[functions.email-unsubscribe]
+verify_jwt = false

@@ -88,14 +88,15 @@ export function LessonsPage() {
 function ActiveLessonCard({
   lesson,
 }: {
-  lesson: { id: string; title: string; status: string; focus_pattern_ids: string[]; total: number; done: number }
+  lesson: { id: string; title: string; status: string; focus_pattern_ids: string[]; total: number; done: number; meta?: unknown }
 }) {
   const patterns = useLessonPatterns(lesson.focus_pattern_ids)
   const started = lesson.done > 0
+  const prepared = !!(lesson.meta as { prepared?: boolean } | null)?.prepared
   return (
     <Card className="flex flex-col gap-5 p-5 sm:p-8">
       <div className="flex flex-col gap-2">
-        <p className="text-footnote font-medium text-label-2">{started ? 'En curso' : 'Lista para empezar'} · unos 20 minutos</p>
+        <p className="text-footnote font-medium text-label-2">{started ? 'En curso' : prepared ? 'Preparada para ti' : 'Lista para empezar'} · unos 20 minutos</p>
         <h2 className="font-display text-[clamp(1.5rem,1.25rem+1vw,2.125rem)] leading-[1.15] font-bold tracking-[-0.025em] text-balance">
           {lesson.title}
         </h2>

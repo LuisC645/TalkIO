@@ -1,8 +1,10 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { AIError, getAIProvider, type GenerateJSONRequest } from './ai/index.ts'
+import { inBackground } from './background.ts'
 
 /**
- * Llama a la IA y registra el uso en ai_usage (éxito o fallo), para medir costo real.
+ * Llama a la IA y registra el uso en ai_usage (éxito o fallo), para medir costo real. El éxito se
+ * registra en segundo plano para no retrasar la respuesta.
  * Devuelve el JSON crudo; quien llama lo valida con zod.
  */
 export async function callAI(
@@ -12,7 +14,8 @@ export async function callAI(
 ): Promise<{ data: unknown; model: string }> {
   try {
     const { data, usage } = await getAIProvider().generateJSON(req)
-    await admin.from('ai_usage').insert({
+    // El registro de uso no retrasa la respuesta (se guarda en segundo plano)
+    inBackground(Promise.resolve(admin.from('ai_usage').insert({
       user_id: ctx.userId,
       function_name: ctx.functionName,
       tier: req.tier,
@@ -22,7 +25,7 @@ export async function callAI(
       cached_tokens: usage.cachedTokens,
       latency_ms: usage.latencyMs,
       success: true,
-    })
+    })))
     return { data, model: usage.model }
   } catch (err) {
     const usage = err instanceof AIError ? err.usage : undefined

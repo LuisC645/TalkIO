@@ -21,50 +21,57 @@ export async function recordDetectedErrors(
   const touched = new Set(opts.skip ?? [])
   const created: string[] = []
 
-  for (const err of errors) {
-    let patternId = byCode.get(err.code)
-    if (!patternId) {
-      const catalog = CATALOG_BY_CODE.get(err.code)
-      if (!catalog) continue // "other" u otro código desconocido
-      const { data: inserted, error } = await admin
-        .from('error_patterns')
-        .insert({
-          user_id: userId,
-          code: catalog.code,
-          title: catalog.title,
-          rule: catalog.rule,
-          category: catalog.category,
-          skill: catalog.skill,
-          priority: catalog.priority,
-          last_seen_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single()
-      if (error) {
-        // Carrera con otra inserción del mismo código: releer
-        const { data: again } = await admin.from('error_patterns').select('id').eq('user_id', userId).eq('code', err.code).maybeSingle()
-        if (!again) continue
-        patternId = again.id as string
-      } else {
-        patternId = inserted.id as string
-        created.push(catalog.title)
-        await admin.from('srs_cards').insert({ user_id: userId, item_type: 'pattern', pattern_id: patternId })
-      }
-      byCode.set(err.code, patternId)
-    }
-    if (touched.has(patternId)) continue
-    touched.add(patternId)
+  // Una entrada por código (la primera ocurrencia); cada código se procesa en paralelo: sus
+  // consultas no dependen de los demás, así 5 errores no suman 20 consultas en fila
+  const firstByCode = new Map<string, DetectedError>()
+  for (const err of errors) if (!firstByCode.has(err.code)) firstByCode.set(err.code, err)
 
-    await admin.from('error_occurrences').insert({
-      user_id: userId,
-      pattern_id: patternId,
-      attempt_id: opts.attemptId ?? null,
-      wrong_text: err.wrong.slice(0, 500) || '—',
-      corrected_text: err.right.slice(0, 500) || '—',
-      context: err.context ?? null,
-      source: opts.source,
-    })
-    await admin.rpc('record_pattern_result', { p_pattern_id: patternId, p_correct: false })
-  }
+  await Promise.all(
+    [...firstByCode.values()].map(async (err) => {
+      let patternId = byCode.get(err.code)
+      if (!patternId) {
+        const catalog = CATALOG_BY_CODE.get(err.code)
+        if (!catalog) return // "other" u otro código desconocido
+        const { data: inserted, error } = await admin
+          .from('error_patterns')
+          .insert({
+            user_id: userId,
+            code: catalog.code,
+            title: catalog.title,
+            rule: catalog.rule,
+            category: catalog.category,
+            skill: catalog.skill,
+            priority: catalog.priority,
+            last_seen_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single()
+        if (error) {
+          // Carrera con otra inserción del mismo código: releer
+          const { data: again } = await admin.from('error_patterns').select('id').eq('user_id', userId).eq('code', err.code).maybeSingle()
+          if (!again) return
+          patternId = again.id as string
+        } else {
+          patternId = inserted.id as string
+          created.push(catalog.title)
+          await admin.from('srs_cards').insert({ user_id: userId, item_type: 'pattern', pattern_id: patternId })
+        }
+      }
+      if (touched.has(patternId)) return
+      touched.add(patternId)
+      await Promise.all([
+        admin.from('error_occurrences').insert({
+          user_id: userId,
+          pattern_id: patternId,
+          attempt_id: opts.attemptId ?? null,
+          wrong_text: err.wrong.slice(0, 500) || '—',
+          corrected_text: err.right.slice(0, 500) || '—',
+          context: err.context ?? null,
+          source: opts.source,
+        }),
+        admin.rpc('record_pattern_result', { p_pattern_id: patternId, p_correct: false }),
+      ])
+    }),
+  )
   return { created, touched: [...touched] }
 }

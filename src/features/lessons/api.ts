@@ -17,10 +17,13 @@ export function useActiveLesson() {
   return useQuery({
     queryKey: lessonKeys.active(userId),
     enabled: !!userId,
+    // Mientras no haya lección, se revisa cada 15 s: la preparación en segundo plano (al abrir la
+    // app) la deja lista en unos segundos y aparece sola, sin pulsar "Generar"
+    refetchInterval: (query) => (query.state.data ? false : 15_000),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lessons')
-        .select('id, title, status, generated_at, focus_pattern_ids, round')
+        .select('id, title, status, generated_at, focus_pattern_ids, round, meta')
         .eq('kind', 'lesson')
         .in('status', ['ready', 'in_progress'])
         .order('generated_at', { ascending: false })
@@ -192,6 +195,11 @@ export function useExamStatus() {
   return useQuery({
     queryKey: ['exams', 'status', userId],
     enabled: !!userId,
+    // Examen desbloqueado pero aún sin crear: la preparación en segundo plano lo crea enseguida
+    refetchInterval: (query) => {
+      const s = query.state.data
+      return s && ((s.weekly.available && !s.weekly.exam) || (s.level.available && !s.level.exam)) ? 20_000 : false
+    },
     queryFn: () => invokeFunction<ExamStatus>('exams', { action: 'status' }),
   })
 }

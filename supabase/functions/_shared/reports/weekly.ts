@@ -70,6 +70,9 @@ export function templateReport(s: WeeklyStats, name: string | null): string {
  * Redacta con IA si hubo actividad y la IA está disponible; si no, usa la plantilla con los datos reales.
  * Devuelve el reporte creado o null si ya existía / no corresponde.
  */
+/** Los reportes de prueba llevan este prefijo en `model`: el real de esa semana los reemplaza */
+export const TEST_MODEL_PREFIX = 'prueba:'
+
 export async function ensureWeeklyReport(admin: SupabaseClient, userId: string) {
   const { data: profile } = await admin.from('profiles').select('timezone, display_name, interests, created_at').eq('id', userId).single()
   if (!profile) return null
@@ -79,9 +82,45 @@ export async function ensureWeeklyReport(admin: SupabaseClient, userId: string) 
   // La cuenta tiene que haber existido durante esa semana
   if (localDate(profile.timezone ?? 'UTC', new Date(profile.created_at)) > weekEnd) return null
 
-  const { data: existing } = await admin.from('weekly_reports').select('id').eq('user_id', userId).eq('week_start', weekStart).maybeSingle()
-  if (existing) return null
+  const { data: existing } = await admin.from('weekly_reports').select('id, model').eq('user_id', userId).eq('week_start', weekStart).maybeSingle()
+  if (existing) {
+    // Un reporte de prueba (panel de administración) se reemplaza por el real
+    if (!existing.model?.startsWith(TEST_MODEL_PREFIX)) return null
+    await admin.from('weekly_reports').delete().eq('id', existing.id)
+  }
 
+  const { stats, content, model } = await composeWeeklyReport(admin, userId, profile, weekStart)
+
+  const { data: report, error: insErr } = await admin
+    .from('weekly_reports')
+    .insert({ user_id: userId, week_start: weekStart, week_end: weekEnd, stats, content_md: content, model, email_status: 'pending' })
+    .select('id, week_start')
+    .single()
+  if (insErr) {
+    if (insErr.code === '23505') return null
+    throw insErr
+  }
+  await admin.from('notifications').insert({
+    user_id: userId,
+    kind: 'report_ready',
+    title: 'Tu reporte semanal está listo',
+    body: `Resumen de tu semana del ${weekStart} al ${weekEnd}.`,
+    link: `/settings/reports/${report.id}`,
+    dedupe_key: `report:${weekStart}`,
+  })
+  return report
+}
+
+/**
+ * Redacta el reporte de una semana: IA si hubo actividad (con la plantilla como respaldo) o
+ * plantilla si no la hubo. No guarda nada: lo usan ensureWeeklyReport y la prueba del panel.
+ */
+export async function composeWeeklyReport(
+  admin: SupabaseClient,
+  userId: string,
+  profile: { display_name: string | null; interests: unknown },
+  weekStart: string,
+): Promise<{ stats: WeeklyStats; content: string; model: string }> {
   const { data: statsRaw, error } = await admin.rpc('get_weekly_stats', { p_user_id: userId, p_week_start: weekStart })
   if (error) throw error
   const stats = statsRaw as WeeklyStats
@@ -106,22 +145,33 @@ export async function ensureWeeklyReport(admin: SupabaseClient, userId: string) 
     if (!(err instanceof AIError) && !(err instanceof z.ZodError)) throw err
   }
 
-  const { data: report, error: insErr } = await admin
+  return { stats, content, model }
+}
+
+/**
+ * Prueba desde el panel de administración: genera y guarda el reporte de la semana en curso con
+ * la actividad hasta hoy (igual que el real). Queda marcado como prueba: se puede regenerar
+ * cuantas veces se quiera y el lunes el reporte real de esa semana lo reemplaza. No envía correo.
+ */
+export async function saveTestReport(admin: SupabaseClient, userId: string) {
+  const { data: profile } = await admin.from('profiles').select('timezone, display_name, interests').eq('id', userId).single()
+  const weekStart = mondayOf(localDate(profile?.timezone ?? 'UTC'))
+  const weekEnd = addDays(weekStart, 6)
+  const { stats, content, model } = await composeWeeklyReport(
+    admin,
+    userId,
+    { display_name: profile?.display_name ?? null, interests: profile?.interests ?? [] },
+    weekStart,
+  )
+  await admin.from('weekly_reports').delete().eq('user_id', userId).eq('week_start', weekStart).like('model', `${TEST_MODEL_PREFIX}%`)
+  const { data: report, error } = await admin
     .from('weekly_reports')
-    .insert({ user_id: userId, week_start: weekStart, week_end: weekEnd, stats, content_md: content, model, email_status: 'pending' })
-    .select('id, week_start')
+    .insert({ user_id: userId, week_start: weekStart, week_end: weekEnd, stats, content_md: content, model: `${TEST_MODEL_PREFIX}${model}`, email_status: 'skipped' })
+    .select('id')
     .single()
-  if (insErr) {
-    if (insErr.code === '23505') return null
-    throw insErr
+  if (error) {
+    if (error.code === '23505') throw new Error('Ya existe el reporte real de esta semana.')
+    throw error
   }
-  await admin.from('notifications').insert({
-    user_id: userId,
-    kind: 'report_ready',
-    title: 'Tu reporte semanal está listo',
-    body: `Resumen de tu semana del ${weekStart} al ${weekEnd}.`,
-    link: `/settings/reports/${report.id}`,
-    dedupe_key: `report:${weekStart}`,
-  })
-  return report
+  return { id: report.id as string, model, weekStart }
 }

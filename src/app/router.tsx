@@ -14,6 +14,17 @@ export const router = createBrowserRouter([
   // Las notificaciones ahora son un cajón (campana); la ruta antigua lleva al inicio
   { path: '/notifications', element: <Navigate to="/dashboard" replace /> },
   { path: '/auth/callback', element: <AuthCallbackPage /> },
+  // Políticas: públicas (se enlazan desde el registro, los correos y Ajustes)
+  {
+    path: '/privacidad',
+    errorElement: <RouteError />,
+    lazy: async () => ({ Component: (await import('@/features/legal/pages/PrivacyPage')).PrivacyPage }),
+  },
+  {
+    path: '/cookies',
+    errorElement: <RouteError />,
+    lazy: async () => ({ Component: (await import('@/features/legal/pages/CookiesPage')).CookiesPage }),
+  },
   {
     element: <RequireAuth />,
     // Cualquier error en una pantalla interna → recarga (versión nueva) o inicio de sesión

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 /** Columnas que el usuario puede editar (la base solo permite estas por GRANT de columna) */
 export type ProfilePatch = Partial<{
   display_name: string
+  email_opt_in: boolean
   daily_goal_xp: number
   daily_goal_minutes: number
   interests: string[]

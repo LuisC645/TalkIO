@@ -14,6 +14,9 @@ type Action =
   | { action: 'reset_reviews' }
   | { action: 'reset_patterns' }
   | { action: 'unlock_exams' }
+  | { action: 'generate_report' }
+  | { action: 'test_weekly_report' }
+  | { action: 'test_streak_email' }
 
 type Stats = {
   ai_calls_24h: number
@@ -41,6 +44,14 @@ const GROUPS: { title: string; items: { label: string; detail: string; body: Act
       { label: 'Descartar lección activa', detail: 'Para generar una nueva', body: { action: 'discard_active_lesson' } },
       { label: 'Vencer 10 tarjetas', detail: 'Adelanta tarjetas ya estudiadas', body: { action: 'make_cards_due', count: 10 } },
       { label: 'Desbloquear examen', detail: 'El próximo examen (semanal o de nivel) sin requisitos', body: { action: 'unlock_exams' } },
+    ],
+  },
+  {
+    title: 'Reportes y correos',
+    items: [
+      { label: 'Generar reporte en la app', detail: 'Con tu actividad de esta semana; aparece en Reportes semanales', body: { action: 'generate_report' } },
+      { label: 'Enviar reporte por correo', detail: 'Igual, pero a tu email (sin guardarlo en la app)', body: { action: 'test_weekly_report' } },
+      { label: 'Enviar recordatorio de racha', detail: 'El correo de las 19:00 con tu racha y tu meta de hoy', body: { action: 'test_streak_email' } },
     ],
   },
   {

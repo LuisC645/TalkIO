@@ -8,6 +8,7 @@ import { recordDetectedErrors } from '../_shared/patterns/record.ts'
 import { matchAccepted, normalize } from '../_shared/grading/normalize.ts'
 import { AIError } from '../_shared/ai/provider.ts'
 import { HttpError, json, serve } from '../_shared/http.ts'
+import { inBackground, prepareToday } from '../_shared/prep.ts'
 import { adminClient, requireUser } from '../_shared/supabase.ts'
 import { assertDailyLimit, callAI } from '../_shared/usage.ts'
 
@@ -144,6 +145,8 @@ serve(async (req) => {
   if (xp > 0) await admin.rpc('award_xp', { p_user_id: user.id, p_amount: xp, p_source: 'exercise', p_ref_id: attempt.id })
 
   const lesson = await updateLesson(admin, user.id, exercise.lesson_id)
+  // Lección recién terminada: la siguiente queda lista en segundo plano (sin esperar a la IA)
+  if ('score' in lesson && lesson.kind === 'lesson') inBackground(prepareToday(admin, user.id, 'after_lesson'))
   return json(await buildResult(admin, user.id, attempt, { xp, targetProgress, lesson }))
 })
 

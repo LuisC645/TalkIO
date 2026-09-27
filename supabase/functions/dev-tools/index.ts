@@ -1,6 +1,8 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { z } from 'npm:zod@4'
 import { HttpError, json, serve } from '../_shared/http.ts'
+import { sendTestEmail } from '../_shared/email/scheduled.ts'
+import { saveTestReport } from '../_shared/reports/weekly.ts'
 import { adminClient, requireUser } from '../_shared/supabase.ts'
 
 /**
@@ -19,6 +21,9 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('reset_reviews') }),
   z.object({ action: z.literal('reset_patterns') }),
   z.object({ action: z.literal('unlock_exams') }),
+  z.object({ action: z.literal('generate_report') }),
+  z.object({ action: z.literal('test_weekly_report') }),
+  z.object({ action: z.literal('test_streak_email') }),
 ])
 
 serve(async (req) => {
@@ -135,6 +140,22 @@ serve(async (req) => {
       const lc = { ...((p?.learner_context as Record<string, unknown>) ?? {}), dev_unlock_exams: true }
       await must(admin.from('profiles').update({ learner_context: lc }).eq('id', uid))
       return json({ message: 'Desbloqueado: tu próximo examen (semanal o de nivel) se puede crear sin requisitos.' })
+    }
+
+    case 'generate_report': {
+      const r = await saveTestReport(admin, uid)
+      const how = r.model === 'plantilla' ? 'con la plantilla (sin actividad esta semana)' : `con ${r.model}`
+      return json({ message: `Reporte de esta semana generado ${how}. Míralo en Ajustes → Reportes semanales.` })
+    }
+
+    case 'test_weekly_report':
+    case 'test_streak_email': {
+      const kind = body.action === 'test_weekly_report' ? 'weekly_report' : 'streak_reminder'
+      const r = await sendTestEmail(admin, uid, kind)
+      const how = r.model ? (r.model === 'plantilla' ? ' (plantilla: sin actividad esta semana)' : ` (${r.model})`) : ''
+      const what = kind === 'weekly_report' ? `Reporte semanal${how}` : 'Recordatorio de racha'
+      if (!r.ok) throw new HttpError(502, `${what}: no se pudo enviar a ${r.to ?? 'tu email'}. ${r.error ?? ''}`.trim())
+      return json({ message: `${what} enviado a ${r.to}. Revisa tu bandeja (y spam).` })
     }
 
     case 'reset_patterns': {

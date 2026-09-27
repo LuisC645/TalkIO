@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { TextField } from '@/components/ui/TextField'
@@ -47,6 +47,8 @@ export function AuthCard({ redirectTo = '/dashboard' }: { redirectTo?: string })
   const [username, setUsername] = useState('')
   const [usernameEdited, setUsernameEdited] = useState(false)
   const [usernameError, setUsernameError] = useState<string | null>(null)
+  // Consentimiento para correos: desmarcado por defecto (se cambia luego en Ajustes)
+  const [emailOptIn, setEmailOptIn] = useState(false)
   const [checked, setChecked] = useState<{ username: string; free: boolean | null } | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -157,7 +159,7 @@ export function AuthCard({ redirectTo = '/dashboard' }: { redirectTo?: string })
           // @usuario se ocupó justo antes, el servidor asigna uno libre parecido.
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
-            data: { display_name: name.trim().replace(/\s+/g, ' ').slice(0, 60), username: cleanUsername(username) },
+            data: { display_name: name.trim().replace(/\s+/g, ' ').slice(0, 60), username: cleanUsername(username), email_opt_in: emailOptIn },
           },
         })
         if (error) return setFormError(authErrorMessage(error))
@@ -291,6 +293,34 @@ export function AuthCard({ redirectTo = '/dashboard' }: { redirectTo?: string })
             }
           }}
         />
+
+        {mode === 'signup' && (
+          <label className="flex cursor-pointer items-start gap-3 text-footnote text-label-2">
+            <input
+              type="checkbox"
+              checked={emailOptIn}
+              onChange={(e) => setEmailOptIn(e.target.checked)}
+              className="mt-0.5 size-5 shrink-0 cursor-pointer rounded-md accent-[var(--accent)]"
+            />
+            <span>
+              Acepto recibir por correo mi reporte semanal y recordatorios de racha. Puedes cambiarlo cuando quieras en Ajustes.
+            </span>
+          </label>
+        )}
+
+        {mode === 'signup' && (
+          <p className="-mt-2 text-footnote text-label-2">
+            Al crear tu cuenta aceptas la{' '}
+            <Link to="/privacidad" target="_blank" className="font-medium text-link">
+              política de privacidad
+            </Link>{' '}
+            y la de{' '}
+            <Link to="/cookies" target="_blank" className="font-medium text-link">
+              cookies
+            </Link>
+            .
+          </p>
+        )}
 
         {formError && (
           <p role="alert" className="appear rounded-xl bg-danger/10 px-4 py-3 text-callout text-danger">

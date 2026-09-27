@@ -81,6 +81,14 @@ function WeeklyExam({ s, onStart, creating }: { s: ExamStatus; onStart: () => vo
             Ver resultados
           </Link>
         </>
+      ) : exam?.status === 'ready' ? (
+        // Preparado en segundo plano: se abre al instante
+        <>
+          <p className="text-callout text-label-2">Listo para ti: 10 preguntas sobre lo que practicaste esta semana. Aprobado con 70%.</p>
+          <Link to={`/lessons/${exam.id}`} className={buttonClasses('primary', 'md', 'w-full sm:w-fit')}>
+            Empezar examen
+          </Link>
+        </>
       ) : exam ? (
         <Link to={`/lessons/${exam.id}`} className={buttonClasses('primary', 'md', 'w-full sm:w-fit')}>
           Continuar examen
@@ -121,7 +129,16 @@ function LevelExam({ s, onStart, creating }: { s: ExamStatus; onStart: () => voi
   const cooldown = l.cooldown_until ? new Date(l.cooldown_until) : null
   return (
     <Panel eyebrow={`Tu nivel: ${l.current}`} title={`Examen para subir a ${l.target}`}>
-      {l.exam ? (
+      {l.exam?.status === 'ready' ? (
+        <>
+          <p className="text-callout text-label-2">
+            Listo para ti: preguntas de nivel {l.target} y un texto final. Con {l.pass_threshold}% o más subes de nivel.
+          </p>
+          <Link to={`/lessons/${l.exam.id}`} className={buttonClasses('primary', 'md', 'w-full sm:w-fit')}>
+            Empezar examen de nivel
+          </Link>
+        </>
+      ) : l.exam ? (
         <Link to={`/lessons/${l.exam.id}`} className={buttonClasses('primary', 'md', 'w-full sm:w-fit')}>
           Continuar examen
         </Link>

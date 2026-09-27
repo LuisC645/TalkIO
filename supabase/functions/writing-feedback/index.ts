@@ -30,11 +30,15 @@ serve(async (req) => {
   const { text, prompt } = parsed.data
   if (wordCount(text) < MIN_WORDS) throw new HttpError(400, `Escribe al menos ${MIN_WORDS} palabras.`)
 
-  if (!(await assertDailyLimit(admin, user.id, FUNCTION, MAX_PER_DAY))) {
-    throw new HttpError(429, 'Llegaste al límite diario de correcciones. Vuelve mañana.', 'daily_limit')
-  }
+  // Antes de la IA, en paralelo: límite diario, patrones del usuario y XP de escritura de hoy
+  const since = new Date(Date.now() - 24 * 3_600_000).toISOString()
+  const [allowed, { data: patterns }, { count: xpToday }] = await Promise.all([
+    assertDailyLimit(admin, user.id, FUNCTION, MAX_PER_DAY),
+    admin.from('error_patterns').select('code, title').eq('user_id', user.id),
+    admin.from('xp_events').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('source', 'writing').gte('created_at', since),
+  ])
+  if (!allowed) throw new HttpError(429, 'Llegaste al límite diario de correcciones. Vuelve mañana.', 'daily_limit')
 
-  const { data: patterns } = await admin.from('error_patterns').select('code, title').eq('user_id', user.id)
   const w = await gradeWriting(admin, { userId: user.id, functionName: FUNCTION }, { text, prompt }, codesForPrompt(patterns ?? []))
 
   const feedback = {
@@ -52,30 +56,23 @@ serve(async (req) => {
     .single()
   if (error) throw error
 
-  const { created } = await recordDetectedErrors(
-    admin,
-    user.id,
-    [
-      ...w.errors.map((e) => ({ code: e.code, wrong: e.fragment, right: e.correction, context: 'writing' })),
-      ...w.checklist.map((c) => ({ code: c.code, wrong: c.examples[0] ?? c.label, right: '', context: 'writing' })),
-    ],
-    { source: 'writing' },
-  )
+  // XP solo en las primeras entradas del día (evita "farmear" XP); ~2 XP por minuto (un texto
+  // ≈ 3-4 min); revisión básica sin IA: XP mínimo
+  const xp = (xpToday ?? 0) < XP_ENTRIES_PER_DAY ? (w.fallback ? 2 : Math.round(2 + 6 * w.score)) : 0
 
-  // XP solo en las primeras entradas del día (evita "farmear" XP)
-  const since = new Date(Date.now() - 24 * 3_600_000).toISOString()
-  const { count } = await admin
-    .from('xp_events')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('source', 'writing')
-    .gte('created_at', since)
-  let xp = 0
-  if ((count ?? 0) < XP_ENTRIES_PER_DAY) {
-    // ~2 XP por minuto (un texto ≈ 3-4 min); revisión básica sin IA: XP mínimo
-    xp = w.fallback ? 2 : Math.round(2 + 6 * w.score)
-    await admin.rpc('award_xp', { p_user_id: user.id, p_amount: xp, p_source: 'writing', p_ref_id: entry.id })
-  }
+  // Después de la IA, a la vez: registrar los errores y dar el XP
+  const [{ created }] = await Promise.all([
+    recordDetectedErrors(
+      admin,
+      user.id,
+      [
+        ...w.errors.map((e) => ({ code: e.code, wrong: e.fragment, right: e.correction, context: 'writing' })),
+        ...w.checklist.map((c) => ({ code: c.code, wrong: c.examples[0] ?? c.label, right: '', context: 'writing' })),
+      ],
+      { source: 'writing' },
+    ),
+    xp ? admin.rpc('award_xp', { p_user_id: user.id, p_amount: xp, p_source: 'writing', p_ref_id: entry.id }) : null,
+  ])
 
   return json({
     id: entry.id,

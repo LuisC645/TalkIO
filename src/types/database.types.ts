@@ -92,6 +92,83 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_prep: {
+        Row: {
+          error: string | null
+          exam_ids: string[]
+          finished_at: string | null
+          lesson_id: string | null
+          local_date: string
+          started_at: string
+          status: string
+          trigger: string
+          user_id: string
+        }
+        Insert: {
+          error?: string | null
+          exam_ids?: string[]
+          finished_at?: string | null
+          lesson_id?: string | null
+          local_date: string
+          started_at?: string
+          status?: string
+          trigger: string
+          user_id: string
+        }
+        Update: {
+          error?: string | null
+          exam_ids?: string[]
+          finished_at?: string | null
+          lesson_id?: string | null
+          local_date?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_prep_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_log: {
+        Row: {
+          created_at: string
+          dedupe_key: string
+          error: string | null
+          id: string
+          kind: string
+          provider_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key: string
+          error?: string | null
+          id?: string
+          kind: string
+          provider_id?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          provider_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       error_occurrences: {
         Row: {
           attempt_id: string | null
@@ -554,6 +631,8 @@ export type Database = {
           daily_goal_minutes: number
           daily_goal_xp: number
           display_name: string | null
+          email_opt_in: boolean
+          email_opt_in_at: string | null
           id: string
           interests: Json
           learner_context: Json
@@ -572,6 +651,8 @@ export type Database = {
           daily_goal_minutes?: number
           daily_goal_xp?: number
           display_name?: string | null
+          email_opt_in?: boolean
+          email_opt_in_at?: string | null
           id: string
           interests?: Json
           learner_context?: Json
@@ -590,6 +671,8 @@ export type Database = {
           daily_goal_minutes?: number
           daily_goal_xp?: number
           display_name?: string | null
+          email_opt_in?: boolean
+          email_opt_in_at?: string | null
           id?: string
           interests?: Json
           learner_context?: Json
@@ -1092,6 +1175,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      claim_daily_prep: {
+        Args: {
+          p_date: string
+          p_force?: boolean
+          p_trigger: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      due_prep_users: {
+        Args: { p_limit?: number }
+        Returns: {
+          user_id: string
+        }[]
+      }
       get_friend_requests: {
         Args: never
         Returns: {
@@ -1178,6 +1276,7 @@ export type Database = {
         Returns: string
       }
       username_available: { Args: { p_username: string }; Returns: boolean }
+      verify_prep_secret: { Args: { p_secret: string }; Returns: boolean }
       xp_for_level: { Args: { p_level: number }; Returns: number }
     }
     Enums: {

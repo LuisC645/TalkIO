@@ -52,8 +52,12 @@ export function ReportPage() {
           <article className="rounded-[22px] bg-surface p-5 sm:p-7">
             <Markdown source={data.content_md} />
           </article>
-          {data.model === 'plantilla' && (
-            <p className="px-1 text-footnote text-label-2">Resumen generado con tus datos de la semana (sin IA).</p>
+          {data.model?.startsWith('prueba:') ? (
+            <p className="px-1 text-footnote text-label-2">
+              Reporte de prueba con tu actividad de esta semana hasta hoy. El lunes lo reemplaza el reporte definitivo.
+            </p>
+          ) : (
+            data.model === 'plantilla' && <p className="px-1 text-footnote text-label-2">Resumen generado con tus datos de la semana (sin IA).</p>
           )}
         </>
       )}

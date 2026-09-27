@@ -10,7 +10,7 @@ export function useWeeklyReports() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('weekly_reports')
-        .select('id, week_start, week_end, stats, created_at')
+        .select('id, week_start, week_end, stats, created_at, model')
         .order('week_start', { ascending: false })
         .limit(26)
       if (error) throw error
