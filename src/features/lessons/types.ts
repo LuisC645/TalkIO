@@ -2,7 +2,8 @@
 
 export type Phase = 'warmup' | 'drill' | 'free'
 
-type Base = { instruction: string; hint: string | null }
+/** passage: texto de lectura que acompaña a la pregunta (ejercicios de lectura) */
+type Base = { instruction: string; hint: string | null; passage?: string }
 
 export type MultipleChoicePayload = Base & { sentence: string | null; options: string[] }
 export type FillBlankPayload = Base & { sentence: string; verb: string | null; time_clue: string | null }
@@ -68,6 +69,9 @@ export type GradeResult = {
 }
 
 export type LessonKind = 'lesson' | 'weekly_exam' | 'level_exam'
+
+/** Palabra nueva que enseña la lección (pasa al repaso) */
+export type LessonVocab = { term: string; translation: string; example: string }
 
 export type LessonRule = {
   title: string

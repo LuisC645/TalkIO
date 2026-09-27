@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { invokeFunction } from '@/lib/functions'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
-import type { Attempt, Exercise, ExerciseResponse, GradeResult, LessonKind, LessonRule } from './types'
+import type { Attempt, Exercise, ExerciseResponse, GradeResult, LessonKind, LessonRule, LessonVocab } from './types'
 
 export const lessonKeys = {
   all: ['lessons'] as const,
@@ -87,6 +87,7 @@ export type LessonDetail = {
   score: number | null
   xp_earned: number
   rule: LessonRule | null
+  vocabulary: LessonVocab[]
   focus_pattern_ids: string[]
   exercises: Exercise[]
   attempts: Map<string, Attempt>
@@ -114,7 +115,12 @@ export function useLesson(id: string) {
       ])
       if (exercisesRes.error) throw exercisesRes.error
       if (attemptsRes.error) throw attemptsRes.error
-      const content = (lessonRes.data.content ?? {}) as { rule?: LessonRule | null; covers?: string; summary?: string }
+      const content = (lessonRes.data.content ?? {}) as {
+        rule?: LessonRule | null
+        new_vocabulary?: LessonVocab[]
+        covers?: string
+        summary?: string
+      }
       return {
         id: lessonRes.data.id,
         title: lessonRes.data.title,
@@ -127,6 +133,7 @@ export function useLesson(id: string) {
         score: lessonRes.data.score,
         xp_earned: lessonRes.data.xp_earned,
         rule: content.rule ?? null,
+        vocabulary: content.new_vocabulary ?? [],
         focus_pattern_ids: lessonRes.data.focus_pattern_ids,
         exercises: exercisesRes.data as unknown as Exercise[],
         attempts: new Map((attemptsRes.data as unknown as Attempt[]).map((a) => [a.exercise_id, a])),

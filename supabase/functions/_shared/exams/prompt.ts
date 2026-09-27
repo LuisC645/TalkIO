@@ -1,4 +1,4 @@
-export const EXAM_PROMPT_VERSION = 'exam.v2'
+export const EXAM_PROMPT_VERSION = 'exam.v3'
 
 type Base = {
   cefr: string
@@ -14,7 +14,8 @@ EXAM RULES:
 - Every rule-graded item (multiple_choice, fill_blank, tense_contrast, reorder) must have exactly ONE clearly correct answer given the context; include contracted and full forms in "accepted".
 - Mix types; no two consecutive exercises of the same type. Use the learner's interests for contexts.
 - Field requirements per type are the same as in lessons (unused fields null): multiple_choice (sentence, options 3–4, correct_index), fill_blank (sentence with one "___", accepted), tense_contrast (sentence with "___", verb, time_clue, accepted), reorder (tokens in correct order), transform (sentence, target_form, model_answer, accepted), error_detection (sentence with ONE error, model_answer, accepted), free_writing (sentence = prompt in English, guiding_questions, min_words, model_answer).
-- explanation (always, Spanish, 1–2 sentences) is shown in the results review after the exam.`
+- explanation (always, Spanish, 1–2 sentences) is shown in the results review after the exam.
+- new_vocabulary must be null and passage must be null in every exercise (the level reference below describes lessons; use only its grammar, vocabulary and length rules).`
 
 export function weeklyExamPrompt(b: Base) {
   return `${COMMON}

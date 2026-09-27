@@ -25,7 +25,7 @@ const nullableStrings = { type: ['array', 'null'], items: { type: 'string' } }
 export const lessonJsonSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['title', 'topic_slug', 'focus_codes', 'rule', 'exercises'],
+  required: ['title', 'topic_slug', 'focus_codes', 'rule', 'new_vocabulary', 'exercises'],
   properties: {
     title: { type: 'string', description: 'Título corto en español (máx. 6 palabras)' },
     topic_slug: { type: 'string', description: 'Uno de los slugs de tema candidatos' },
@@ -48,6 +48,16 @@ export const lessonJsonSchema = {
         },
       },
     },
+    new_vocabulary: {
+      type: ['array', 'null'],
+      description: 'Palabras nuevas de la lección (null en exámenes)',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['term', 'translation', 'example'],
+        properties: { term: { type: 'string' }, translation: { type: 'string' }, example: { type: 'string' } },
+      },
+    },
     exercises: {
       type: 'array',
       items: {
@@ -56,7 +66,7 @@ export const lessonJsonSchema = {
         required: [
           'phase', 'type', 'instruction', 'target_code', 'target_term', 'sentence', 'verb', 'time_clue', 'options',
           'correct_index', 'tokens', 'accepted', 'target_form', 'model_answer', 'hint', 'explanation', 'min_words',
-          'guiding_questions',
+          'guiding_questions', 'passage',
         ],
         properties: {
           phase: { type: 'string', enum: ['warmup', 'drill', 'free'] },
@@ -77,6 +87,7 @@ export const lessonJsonSchema = {
           explanation: { type: 'string', description: 'Español, 1-2 frases: por qué es así' },
           min_words: { type: ['integer', 'null'] },
           guiding_questions: nullableStrings,
+          passage: { type: ['string', 'null'], description: 'Texto de lectura (solo en ejercicios de lectura)' },
         },
       },
     },
@@ -102,6 +113,7 @@ const Raw = z.object({
   explanation: z.string().min(3),
   min_words: z.number().int().nullable(),
   guiding_questions: z.array(z.string()).nullable(),
+  passage: z.string().nullish(),
 })
 export type RawExercise = z.infer<typeof Raw>
 
@@ -114,6 +126,10 @@ export const LessonOutput = z.object({
     explanation: z.string().min(10),
     examples: z.array(z.object({ wrong: z.string(), right: z.string(), note: z.string().nullable() })).min(1),
   }),
+  new_vocabulary: z
+    .array(z.object({ term: z.string().trim().min(1).max(60), translation: z.string().trim().min(1), example: z.string().trim() }))
+    .nullish()
+    .transform((v) => v ?? []),
   // Un ejercicio mal formado se descarta sin tumbar la lección (se exigen 6 válidos)
   exercises: z
     .array(z.unknown())
@@ -153,7 +169,9 @@ function shuffle<T>(items: T[]): T[] {
  */
 export function buildExercise(e: RawExercise): BuiltExercise | string {
   const base = { phase: e.phase, type: e.type, target_code: e.target_code, target_term: e.target_term }
-  const common = { instruction: e.instruction, hint: e.hint }
+  // El texto de lectura acompaña a la pregunta (se muestra encima)
+  const passage = e.passage?.trim()
+  const common = { instruction: e.instruction, hint: e.hint, ...(passage ? { passage } : {}) }
 
   switch (e.type) {
     case 'multiple_choice': {

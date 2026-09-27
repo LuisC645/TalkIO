@@ -28,27 +28,38 @@ const TYPE_LABEL: Record<string, string> = {
   speaking_prompt: 'Responde',
 }
 
-/** Envoltorio común: fase, tipo, instrucción y pista opcional */
+/** Envoltorio común: fase, tipo, texto de lectura opcional, instrucción y pista opcional */
 export function ExerciseShell({
   phase,
   type,
   instruction,
   hint,
+  passage,
   children,
 }: {
   phase: Phase
   type: string
   instruction: string
   hint: string | null
+  passage?: string | null
   children: ReactNode
 }) {
   const [showHint, setShowHint] = useState(false)
   return (
     <Card className="flex flex-col gap-6 p-5 sm:p-8">
       <div className="flex flex-wrap items-center gap-2 text-footnote font-medium text-label-2">
-        <span className="rounded-full bg-fill px-2.5 py-1 text-label">{PHASE[phase] ?? phase}</span>
-        <span>{TYPE_LABEL[type] ?? 'Ejercicio'}</span>
+        <span className="rounded-full bg-fill px-2.5 py-1 text-label">{passage ? 'Lectura' : (PHASE[phase] ?? phase)}</span>
+        <span>{passage ? 'Comprensión' : (TYPE_LABEL[type] ?? 'Ejercicio')}</span>
       </div>
+      {passage && (
+        <div lang="en" className="flex max-h-[45dvh] flex-col gap-3 overflow-y-auto overscroll-contain rounded-2xl bg-fill/60 px-4 py-4 sm:px-5">
+          {passage.split(/\n+/).map((p, i) => (
+            <p key={i} className="text-body leading-[1.65] text-label">
+              {p}
+            </p>
+          ))}
+        </div>
+      )}
       <h2 className="font-display text-[clamp(1.25rem,1.1rem+0.6vw,1.5rem)] leading-[1.3] font-semibold tracking-[-0.015em] text-balance">
         {instruction}
       </h2>

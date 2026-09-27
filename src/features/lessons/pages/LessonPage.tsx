@@ -156,7 +156,7 @@ export function LessonPage() {
           />
         )}
 
-        {session.stage === 'rule' && lesson.rule && <RuleStage rule={lesson.rule} onContinue={() => session.setStage('exercise')} />}
+        {session.stage === 'rule' && lesson.rule && <RuleStage rule={lesson.rule} vocabulary={lesson.vocabulary} onContinue={() => session.setStage('exercise')} />}
 
         {session.stage === 'exercise' && current && (
           <div key={current.id} className="animate-card">
@@ -165,6 +165,7 @@ export function LessonPage() {
               type={current.type}
               instruction={String(current.payload.instruction ?? '')}
               hint={(current.payload.hint as string | null) ?? null}
+              passage={(current.payload.passage as string | undefined) ?? null}
             >
               {Card ? (
                 <Card payload={current.payload} value={draft} onChange={setDraft} attempt={attempt} onSubmit={submit} />

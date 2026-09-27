@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/Button'
 import { buttonClasses } from '@/components/ui/buttonClasses'
 import { Card } from '@/components/ui/Card'
 import { CheckIcon } from '@/components/ui/icons'
-import type { Exercise, LessonRule } from '../types'
+import type { Exercise, LessonRule, LessonVocab } from '../types'
 
 const stagger = (n: number) => ({ '--stagger': n }) as CSSProperties
 
 const PHASES = [
   { key: 'warmup', label: 'Calentamiento', detail: 'Repaso rápido de lo que ya viste' },
-  { key: 'rule', label: 'La regla', detail: 'Una explicación corta y clara' },
+  { key: 'rule', label: 'La regla', detail: 'Una explicación corta y vocabulario nuevo' },
   { key: 'drill', label: 'Práctica', detail: 'Ejercicios sobre tus errores activos' },
+  { key: 'reading', label: 'Lectura', detail: 'Un texto corto con preguntas de comprensión' },
   { key: 'free', label: 'Escritura libre', detail: 'Tu respuesta, corregida por IA' },
 ]
 
@@ -28,7 +29,9 @@ export function IntroStage({
   resuming: boolean
   onStart: () => void
 }) {
-  const count = (phase: string) => exercises.filter((e) => e.phase === phase).length
+  const isReading = (e: Exercise) => !!e.payload.passage
+  const count = (phase: string) =>
+    phase === 'reading' ? exercises.filter(isReading).length : exercises.filter((e) => e.phase === phase && !isReading(e)).length
   return (
     <div className="flex flex-col gap-8">
       <div style={stagger(0)} className="animate-enter flex flex-col gap-3">
@@ -77,7 +80,7 @@ export function IntroStage({
   )
 }
 
-export function RuleStage({ rule, onContinue }: { rule: LessonRule; onContinue: () => void }) {
+export function RuleStage({ rule, vocabulary, onContinue }: { rule: LessonRule; vocabulary: LessonVocab[]; onContinue: () => void }) {
   return (
     <div className="animate-card flex flex-col gap-6">
       <Card className="flex flex-col gap-6 p-5 sm:p-8">
@@ -102,6 +105,31 @@ export function RuleStage({ rule, onContinue }: { rule: LessonRule; onContinue: 
             </li>
           ))}
         </ul>
+        {vocabulary.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-separator pt-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-callout font-semibold">Vocabulario nuevo</h3>
+              <span className="text-footnote text-label-2">Pasa a tu repaso</span>
+            </div>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {vocabulary.map((v) => (
+                <li key={v.term} className="rounded-2xl bg-fill/60 px-4 py-3">
+                  <p className="flex flex-wrap items-baseline gap-x-2 text-body">
+                    <span lang="en" className="font-semibold">
+                      {v.term}
+                    </span>
+                    <span className="text-callout text-label-2">{v.translation}</span>
+                  </p>
+                  {v.example && (
+                    <p lang="en" className="mt-1 text-footnote text-label-2 italic">
+                      {v.example}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Card>
       <Button size="lg" onClick={onContinue} className="w-full sm:ml-auto sm:w-auto sm:min-w-52">
         Entendido, a practicar

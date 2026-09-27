@@ -78,7 +78,7 @@ export async function createLesson(
         input,
         responseSchema: lessonJsonSchema as unknown as Record<string, unknown>,
         temperature: 0.8,
-        maxOutputTokens: 12000,
+        maxOutputTokens: 16000,
         thinking: 'low',
       })
     } catch (err) {
@@ -117,7 +117,7 @@ export async function createLesson(
       focus_pattern_ids: focusIds.length ? focusIds : ctx.focus.map((f) => codes.get(f.code)!).filter(Boolean),
       topic_id: topicId,
       status: 'ready',
-      content: { rule: output.rule, topic_slug: output.topic_slug, focus_codes: output.focus_codes },
+      content: { rule: output.rule, new_vocabulary: output.new_vocabulary, topic_slug: output.topic_slug, focus_codes: output.focus_codes },
       model: usedModel,
       prompt_version: LESSON_PROMPT_VERSION,
       meta: { ...meta, cefr: ctx.profile.cefr },
@@ -127,6 +127,7 @@ export async function createLesson(
   if (lessonError) throw lessonError
 
   const vocabIds = new Map(ctx.vocabRows.map((v) => [v.term.toLowerCase(), v.id]))
+  for (const [term, id] of await saveNewVocabulary(admin, userId, output.new_vocabulary, topicId)) vocabIds.set(term, id)
   const ordered = [...built].sort((a, b) => phaseOrder(a.phase) - phaseOrder(b.phase))
   const { error: exError } = await admin.from('exercises').insert(
     ordered.map((e, i) => ({
@@ -151,6 +152,49 @@ export async function createLesson(
 }
 
 const phaseOrder = (p: string) => ({ warmup: 0, drill: 1, free: 2 })[p] ?? 1
+
+/**
+ * Palabras nuevas de la lección → vocab_items del usuario con su tarjeta de repaso (SRS).
+ * Las que ya tenía se reutilizan. Devuelve término (minúsculas) → id para enlazar los ejercicios.
+ */
+async function saveNewVocabulary(
+  admin: SupabaseClient,
+  userId: string,
+  words: LessonOutput['new_vocabulary'],
+  topicId: string | null,
+): Promise<Map<string, string>> {
+  const ids = new Map<string, string>()
+  const unique = [...new Map(words.map((w) => [w.term.toLowerCase(), w])).values()]
+  if (!unique.length) return ids
+  const { data: existing } = await admin.from('vocab_items').select('id, term').eq('user_id', userId)
+  for (const v of existing ?? []) ids.set(v.term.toLowerCase(), v.id)
+  const fresh = unique.filter((w) => !ids.has(w.term.toLowerCase()))
+  if (!fresh.length) return ids
+  const { data: inserted, error } = await admin
+    .from('vocab_items')
+    .insert(
+      fresh.map((w) => ({
+        user_id: userId,
+        term: w.term,
+        translation: w.translation,
+        example: w.example || null,
+        kind: w.term.includes(' ') ? 'expression' : 'word',
+        topic_id: topicId,
+        notes: 'Vocabulario nuevo de una lección',
+      })),
+    )
+    .select('id, term')
+  // Sin vocabulario nuevo la lección sigue siendo válida
+  if (error) {
+    console.error('vocabulario nuevo:', error.message)
+    return ids
+  }
+  for (const v of inserted ?? []) ids.set(v.term.toLowerCase(), v.id)
+  if (inserted?.length) {
+    await admin.from('srs_cards').insert(inserted.map((v) => ({ user_id: userId, item_type: 'vocab', vocab_id: v.id })))
+  }
+  return ids
+}
 
 /**
  * Sin IA: lección de repaso con ejercicios anteriores (primero los fallados). Si el usuario aún no
@@ -238,6 +282,9 @@ async function loadContext(admin: SupabaseClient, userId: string) {
         .limit(30)
     : { data: [] }
 
+  // Términos que ya conoce (los más recientes), para no repetirlos como vocabulario nuevo
+  const knownRes = await admin.from('vocab_items').select('term').eq('user_id', userId).order('created_at', { ascending: false }).limit(80)
+
   const vocabIdsDue = (cardsRes.data ?? []).map((c) => c.vocab_id).filter(Boolean) as string[]
   const { data: vocabRows } = vocabIdsDue.length
     ? await admin.from('vocab_items').select('id, term, wrong_form, translation').in('id', vocabIdsDue)
@@ -291,6 +338,7 @@ async function loadContext(admin: SupabaseClient, userId: string) {
     ],
     otherCodes: active.filter((p) => !focusRows.includes(p) && !blocked.has(p.code)).map((p) => p.code),
     vocab: (vocabRows ?? []).slice(0, 6).map((v) => ({ term: v.term, wrong_form: v.wrong_form, translation: v.translation })),
+    knownTerms: (knownRes.data ?? []).map((v) => v.term),
     topics: topicCandidates.map((t) => ({ slug: t.slug, name: t.name, status: t.status })),
     recentTitles: (recentRes.data ?? []).map((l) => l.title),
     roadmapFocus: roadmapFocus(lc),

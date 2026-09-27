@@ -14,6 +14,8 @@ export type LevelGuide = {
   time_clues: string
   focus_codes: string[]
   blocked_patterns: string[]
+  new_words: number
+  reading: string
 }
 
 /** Guía del nivel base (A1+ → A1). null si la tabla no tiene la fila */
@@ -37,6 +39,8 @@ The learner is ${cefr}${plus ? ` (solid ${base}, starting to approach the next l
 - Vocabulary: ${g.vocabulary}
 - Sentence length: ${g.sentence_words} words.
 - Time clues you may use: ${g.time_clues}.
+- New vocabulary per lesson: ${g.new_words} words.
+- Reading text: ${g.reading || 'short text at this level with 2–3 comprehension questions.'}
 - free_writing: min_words ${g.free_writing_words}; the prompt and the model_answer must use only ${base} grammar.
 - If a focus error belongs to a structure above this level, practice only the part that fits this level.`
 }
