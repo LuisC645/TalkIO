@@ -10,7 +10,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useProfile } from '@/features/auth/hooks/useProfile'
 import { DevPanel } from '@/features/settings/components/DevPanel'
 import { cn } from '@/lib/cn'
-import { DEV_TOOLS } from '@/lib/devTools'
+import { DEV_TOOLS, isAdmin } from '@/lib/devTools'
 import { XP_PER_MINUTE } from '@/lib/xp'
 import { useAppearanceStore, type Appearance } from '@/stores/appearanceStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -226,7 +226,7 @@ export function SettingsPage() {
         )}
       </GroupedList>
 
-      {DEV_TOOLS && <DevPanel />}
+      {DEV_TOOLS && isAdmin(user?.email) && <DevPanel />}
 
       <GroupedList>
         <Row>

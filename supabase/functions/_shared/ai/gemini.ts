@@ -18,6 +18,17 @@ type GeminiResponse = {
   error?: { code: number; message: string }
 }
 
+// Gemini 2.x configura el razonamiento con un presupuesto de tokens; 3.x con un nivel
+const THINKING_BUDGET: Record<NonNullable<GenerateJSONRequest['thinking']>, number> = {
+  minimal: 0,
+  low: 0, // sin razonamiento: lo más rápido y barato (Flash-Lite no razona por defecto)
+  medium: 1024,
+  high: -1, // dinámico
+}
+function thinkingConfig(model: string, level: NonNullable<GenerateJSONRequest['thinking']>) {
+  return /^gemini-2\./.test(model) ? { thinkingBudget: THINKING_BUDGET[level] } : { thinkingLevel: level }
+}
+
 /** Gemini vía REST generateContent con salida JSON restringida por JSON Schema. */
 export class GeminiProvider implements AIProvider {
   constructor(private readonly apiKey: string) {}
@@ -34,6 +45,12 @@ export class GeminiProvider implements AIProvider {
         return await this.once(req, plan[i])
       } catch (err) {
         lastError = err
+        // Modelo no disponible para este proyecto (404, p. ej. 2.5 en proyectos nuevos): se pasa
+        // directo al siguiente de la lista, sin reintentar el mismo
+        if (err instanceof AIError && err.status === 404 && i < plan.length - 1) {
+          while (plan[i + 1] === plan[i]) i++
+          continue
+        }
         if (!(err instanceof AIError) || !err.transient) throw err
         // Timeout / sin red: no seguir probando modelos (cada uno esperaría el timeout completo)
         if (err.message.startsWith('Gemini sin respuesta')) throw err
@@ -60,7 +77,7 @@ export class GeminiProvider implements AIProvider {
             responseJsonSchema: req.responseSchema,
             temperature: req.temperature ?? 0.7,
             maxOutputTokens: req.maxOutputTokens ?? 8192,
-            ...(req.thinking ? { thinkingConfig: { thinkingLevel: req.thinking } } : {}),
+            ...(req.thinking ? { thinkingConfig: thinkingConfig(model, req.thinking) } : {}),
           },
         }),
       })

@@ -4,8 +4,10 @@ import { HttpError, json, serve } from '../_shared/http.ts'
 import { adminClient, requireUser } from '../_shared/supabase.ts'
 
 /**
- * Herramientas de prueba (panel "Pruebas" del dashboard). Solo actúa sobre los datos de quien
- * llama y solo si el secreto DEV_TOOLS_ENABLED=true está configurado (apagado = 403).
+ * Herramientas de prueba (panel "Pruebas" de Ajustes). Solo actúa sobre los datos de quien
+ * llama, solo si el secreto DEV_TOOLS_ENABLED=true está configurado y solo para los correos
+ * de ADMIN_EMAILS (lista separada por comas). Para cualquier otra cuenta = 403: sumar XP o
+ * simular rachas sería trampa.
  */
 const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('stats') }),
@@ -23,6 +25,10 @@ serve(async (req) => {
   if (Deno.env.get('DEV_TOOLS_ENABLED') !== 'true') throw new HttpError(403, 'Las herramientas de prueba están desactivadas.')
   const admin = adminClient()
   const user = await requireUser(req, admin)
+  const admins = (Deno.env.get('ADMIN_EMAILS') ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  if (!user.email || !admins.includes(user.email.toLowerCase())) {
+    throw new HttpError(403, 'Las herramientas de prueba son solo para el administrador.')
+  }
   const parsed = Body.safeParse(await req.json().catch(() => null))
   if (!parsed.success) throw new HttpError(400, 'Acción inválida.')
   const body = parsed.data

@@ -12,10 +12,9 @@ const CHART_HEIGHT = 232 // incluye la franja del eje X (anti-patterns › fixed
 /**
  * XP diario (una serie): columnas ≤ 24px con extremo redondeado de 4px y base recta,
  * un solo color (acento), meta como línea de referencia, rejilla hairline sólida,
- * tooltip por barra y vista de tabla alternativa (dataviz › marks, interaction).
+ * tooltip por barra (dataviz › marks, interaction).
  */
 export function XpChart({ data, goal, loading, error }: Props) {
-  const [view, setView] = useState<'chart' | 'table'>('chart')
   const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const rows = data ?? []
   const total = rows.reduce((sum, d) => sum + d.xp, 0)
@@ -35,38 +34,10 @@ export function XpChart({ data, goal, loading, error }: Props) {
             {loading ? 'Cargando…' : `${total.toLocaleString('es')} XP · meta cumplida ${goalDays} de 14 días`}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setView((v) => (v === 'chart' ? 'table' : 'chart'))}
-          className="min-h-9 rounded-full px-3 text-footnote font-medium text-link transition-colors duration-150 hover:bg-fill"
-        >
-          {view === 'chart' ? 'Ver como tabla' : 'Ver gráfica'}
-        </button>
       </div>
 
       {error ? (
         <p className="py-16 text-center text-callout text-label-2">No se pudo cargar tu actividad. Recarga la página.</p>
-      ) : view === 'table' ? (
-        <div className="max-h-[232px] overflow-y-auto">
-          <table className="w-full text-left text-callout">
-            <thead className="sticky top-0 bg-surface text-footnote text-label-2">
-              <tr>
-                <th className="py-2 font-medium">Día</th>
-                <th className="py-2 text-right font-medium">XP</th>
-                <th className="py-2 text-right font-medium">Meta</th>
-              </tr>
-            </thead>
-            <tbody className="tabular-nums">
-              {[...rows].reverse().map((d) => (
-                <tr key={d.date} className="border-t border-separator">
-                  <td className="py-2 first-letter:uppercase">{formatLong(d.date)}</td>
-                  <td className="py-2 text-right">{d.xp}</td>
-                  <td className="py-2 text-right text-label-2">{d.goalMet ? 'Cumplida' : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       ) : (
         <div className={cn('relative transition-opacity duration-200', loading && 'opacity-40')} style={{ height: CHART_HEIGHT }}>
           <ResponsiveContainer width="100%" height="100%">

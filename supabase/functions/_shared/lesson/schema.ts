@@ -114,7 +114,14 @@ export const LessonOutput = z.object({
     explanation: z.string().min(10),
     examples: z.array(z.object({ wrong: z.string(), right: z.string(), note: z.string().nullable() })).min(1),
   }),
-  exercises: z.array(Raw).min(6),
+  // Un ejercicio mal formado se descarta sin tumbar la lección (se exigen 6 válidos)
+  exercises: z
+    .array(z.unknown())
+    .transform((items) => items.flatMap((item) => {
+      const r = Raw.safeParse(item)
+      return r.success ? [r.data] : []
+    }))
+    .pipe(z.array(Raw).min(6, 'Se necesitan al menos 6 ejercicios completos (con instruction y explanation en texto)')),
 })
 export type LessonOutput = z.infer<typeof LessonOutput>
 
