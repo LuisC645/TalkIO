@@ -341,16 +341,22 @@ export type Database = {
         Row: {
           created_at: string
           friend_id: string
+          responded_at: string | null
+          status: string
           user_id: string
         }
         Insert: {
           created_at?: string
           friend_id: string
+          responded_at?: string | null
+          status?: string
           user_id: string
         }
         Update: {
           created_at?: string
           friend_id?: string
+          responded_at?: string | null
+          status?: string
           user_id?: string
         }
         Relationships: []
@@ -1083,6 +1089,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_friend_requests: {
+        Args: never
+        Returns: {
+          created_at: string
+          direction: string
+          display_name: string
+          other_id: string
+          username: string
+        }[]
+      }
       get_friends: {
         Args: never
         Returns: {
@@ -1100,6 +1116,17 @@ export type Database = {
         Returns: Json
       }
       level_for_xp: { Args: { p_xp: number }; Returns: number }
+      notify_user: {
+        Args: {
+          p_body: string
+          p_key: string
+          p_kind: string
+          p_link: string
+          p_title: string
+          p_user: string
+        }
+        Returns: undefined
+      }
       record_pattern_result: {
         Args: { p_correct: boolean; p_pattern_id: string }
         Returns: {
@@ -1135,6 +1162,11 @@ export type Database = {
           p_log: Json
         }
         Returns: string
+      }
+      remove_friend: { Args: { p_other: string }; Returns: undefined }
+      respond_friend_request: {
+        Args: { p_accept: boolean; p_requester: string }
+        Returns: undefined
       }
       retake_lesson: { Args: { p_lesson_id: string }; Returns: number }
       suggest_username: { Args: { p_base: string }; Returns: string }

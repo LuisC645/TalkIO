@@ -51,7 +51,7 @@ export function LandingPage() {
           aria-label="Principal"
           className="glass mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 rounded-full pr-2.5 pl-5 sm:pl-6"
         >
-          <a href="#inicio" className="rounded-full" aria-label="TalkIO, inicio">
+          <a href="#inicio" className="flex items-center self-stretch rounded-full" aria-label="TalkIO, inicio">
             <Wordmark size="lg" />
           </a>
           <div className="flex items-center gap-2 sm:gap-4">
@@ -142,9 +142,20 @@ export function LandingPage() {
       </main>
 
       <footer className="border-t border-separator bg-bg-grouped">
-        <p className="mx-auto max-w-7xl px-4 py-8 text-footnote text-label-2 sm:px-6 lg:px-10">
-          TalkIO · Proyecto personal de aprendizaje de inglés.
-        </p>
+        <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-8 text-footnote text-label-2 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10">
+          <p>TalkIO · Proyecto personal de aprendizaje de inglés.</p>
+          <p className="text-label-3">
+            Desarrollado por:{' '}
+            <a
+              href="https://luisc645.github.io/Portfolio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-label-3/40 underline-offset-2 transition-colors duration-150 hover:text-label-2 hover:decoration-label-2"
+            >
+              Luis Castillo
+            </a>
+          </p>
+        </div>
       </footer>
     </div>
   )

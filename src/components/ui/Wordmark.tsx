@@ -5,12 +5,12 @@ export function Wordmark({ size = 'md', className }: { size?: 'md' | 'lg'; class
   return (
     <span
       className={cn(
-        'inline-flex items-center font-display font-semibold tracking-[-0.02em]',
+        'inline-flex items-center font-display leading-none font-semibold tracking-[-0.02em]',
         size === 'lg' ? 'gap-2.5 text-[1.375rem]' : 'gap-2 text-[1.1875rem]',
         className,
       )}
     >
-      <svg aria-hidden viewBox="0 0 24 24" className={size === 'lg' ? 'size-7' : 'size-6'}>
+      <svg aria-hidden viewBox="0 0 24 24" className={cn('shrink-0', size === 'lg' ? 'size-7' : 'size-6')}>
         <rect x="2" y="4" width="14" height="11" rx="5.5" className="fill-accent" />
         <rect x="8" y="9" width="14" height="11" rx="5.5" className="fill-label" opacity="0.9" />
       </svg>

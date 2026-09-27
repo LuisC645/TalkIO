@@ -48,7 +48,7 @@ export function AppLayout() {
         )}
       >
         <div className="mx-auto grid h-16 max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 lg:px-10">
-          <NavLink to="/dashboard" aria-label="TalkIO, progreso" className="w-fit rounded-full">
+          <NavLink to="/dashboard" aria-label="TalkIO, progreso" className="flex w-fit items-center self-stretch rounded-full">
             <Wordmark size="lg" />
           </NavLink>
           <nav aria-label="Secciones">

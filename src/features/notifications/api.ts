@@ -4,6 +4,7 @@ import { useProfile } from '@/features/auth/hooks/useProfile'
 import { invokeFunction } from '@/lib/functions'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { useUiStore } from '@/stores/uiStore'
 
 export type AppNotification = {
   id: string
@@ -105,7 +106,8 @@ export function useNotificationSync() {
       const notification = new Notification(n.title, { body: n.body ?? undefined, tag: n.id, icon: '/icon-192.png' })
       notification.onclick = () => {
         window.focus()
-        if (n.link) window.location.assign(n.link)
+        if (n.link === '#friends') useUiStore.getState().openPanel('friends')
+        else if (n.link) window.location.assign(n.link)
       }
     }
     list.forEach((n) => shown.add(n.id))

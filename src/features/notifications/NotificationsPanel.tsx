@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router'
 import { PanelHeader } from '@/components/ui/PanelHeader'
 import { Spinner } from '@/components/ui/Spinner'
 import { cn } from '@/lib/cn'
+import { useUiStore } from '@/stores/uiStore'
 import { useMarkRead, useNotifications, type AppNotification } from './api'
 
 const ICON: Record<string, string> = {
@@ -10,6 +11,8 @@ const ICON: Record<string, string> = {
   exam_available: '📝',
   level_up: '⭐',
   friend_added: '👋',
+  friend_request: '👋',
+  friend_accepted: '🤝',
   goal_met: '✅',
   system: 'ℹ️',
 }
@@ -24,18 +27,21 @@ function when(iso: string) {
 
 /**
  * Notificaciones: nuevas arriba (con punto azul), anteriores debajo. Tocar una la marca como
- * leída y abre su pantalla (cerrando el cajón). Mismo formato que el panel de amigos.
+ * leída y abre su pantalla (cerrando el cajón) o el panel de amigos. Mismo formato que el de amigos.
  */
 export function NotificationsPanel({ onClose, className }: { onClose?: () => void; className?: string }) {
   const { data, isPending } = useNotifications()
   const markRead = useMarkRead()
   const navigate = useNavigate()
+  const openPanel = useUiStore((s) => s.openPanel)
   const unread = (data ?? []).filter((n) => !n.read_at)
   const earlier = (data ?? []).filter((n) => n.read_at)
 
   function open(n: AppNotification) {
     if (!n.read_at) markRead.mutate([n.id])
-    if (n.link) {
+    // "#friends": solicitudes de amistad → abre el panel de amigos
+    if (n.link === '#friends') openPanel('friends')
+    else if (n.link) {
       onClose?.()
       navigate(n.link)
     }
