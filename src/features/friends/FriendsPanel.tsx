@@ -10,9 +10,10 @@ import { useAddFriend, useFriendRequests, useFriends, useRemoveFriend, useRespon
  * Amigos por solicitud: agregar por @usuario envía una solicitud; quien la recibe la acepta o
  * la rechaza. Aceptada, los dos ven la racha y el nivel del otro (solo eso). Quitar un amigo
  * pide confirmación (el botón cambia a "¿Quitar?" y se confirma con un segundo toque).
- * Se usa en el panel lateral del Progreso y en el cajón que abre el botón de amigos.
+ * Se usa en el panel lateral del Progreso y en el cajón que abre el botón de amigos; `canAdd`
+ * en false (panel del Progreso) deja solo la lista: se agrega desde el cajón del banner.
  */
-export function FriendsPanel({ onClose, className }: { onClose?: () => void; className?: string }) {
+export function FriendsPanel({ onClose, className, canAdd = true }: { onClose?: () => void; className?: string; canAdd?: boolean }) {
   const { data: profile } = useProfile()
   const friends = useFriends()
   const requests = useFriendRequests()
@@ -74,32 +75,34 @@ export function FriendsPanel({ onClose, className }: { onClose?: () => void; cla
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="flex gap-2 px-5 pb-3">
-        <label htmlFor="friend-username" className="sr-only">
-          Usuario de tu amigo
-        </label>
-        <input
-          id="friend-username"
-          value={username}
-          onChange={(e) => {
-            setUsername(e.target.value)
-            if (add.isSuccess || add.isError) add.reset()
-          }}
-          placeholder="@usuario de tu amigo"
-          autoCapitalize="off"
-          autoComplete="off"
-          spellCheck={false}
-          className="h-10 min-w-0 flex-1 rounded-full border border-field-border bg-surface px-4 text-callout outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-label-2/80 focus:border-accent focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent)]"
-        />
-        <button
-          type="submit"
-          disabled={!username.trim() || add.isPending}
-          className="flex min-h-10 shrink-0 items-center gap-2 rounded-full bg-accent px-4 text-callout font-semibold text-white transition-transform duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
-        >
-          {add.isPending && <Spinner className="size-4" />}
-          Agregar
-        </button>
-      </form>
+      {canAdd && (
+        <form onSubmit={onSubmit} className="flex gap-2 px-5 pb-3">
+          <label htmlFor="friend-username" className="sr-only">
+            Usuario de tu amigo
+          </label>
+          <input
+            id="friend-username"
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value)
+              if (add.isSuccess || add.isError) add.reset()
+            }}
+            placeholder="@usuario de tu amigo"
+            autoCapitalize="off"
+            autoComplete="off"
+            spellCheck={false}
+            className="h-10 min-w-0 flex-1 rounded-full border border-field-border bg-surface px-4 text-callout outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-label-2/80 focus:border-accent focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent)]"
+          />
+          <button
+            type="submit"
+            disabled={!username.trim() || add.isPending}
+            className="flex min-h-10 shrink-0 items-center gap-2 rounded-full bg-accent px-4 text-callout font-semibold text-white transition-transform duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
+          >
+            {add.isPending && <Spinner className="size-4" />}
+            Agregar
+          </button>
+        </form>
+      )}
       {add.isError && <p className="appear px-6 pb-2 text-footnote text-danger">{add.error.message}</p>}
       {add.isSuccess && (
         <p role="status" className="appear px-6 pb-2 text-footnote text-success">
