@@ -5,7 +5,8 @@ export function Wordmark({ size = 'md', className }: { size?: 'md' | 'lg'; class
   return (
     <span
       className={cn(
-        'inline-flex items-center font-display leading-none font-semibold tracking-[-0.02em]',
+        // translate-y: compensación óptica; "TalkIO" no tiene descendentes y se ve alto aunque esté centrado
+        'inline-flex translate-y-[2px] items-center font-display leading-none font-semibold tracking-[-0.02em]',
         size === 'lg' ? 'gap-2.5 text-[1.375rem]' : 'gap-2 text-[1.1875rem]',
         className,
       )}
