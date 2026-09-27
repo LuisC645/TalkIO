@@ -20,8 +20,8 @@ const NAV: { to: string; label: string; icon: ComponentType<{ className?: string
 /**
  * Navegación (capa funcional, Liquid Glass):
  * - ≥ md: barra superior de ancho completo, sin borde perimetral (solo una línea fina al desplazarse).
- * - < md: banner superior Liquid Glass (nombre centrado, amigos y notificaciones a los lados) que
- *   se oculta al bajar y vuelve al subir; barra de pestañas flotante abajo (zona del pulgar).
+ * - < md: banner superior fijo Liquid Glass (nombre centrado, amigos y notificaciones a los
+ *   lados); barra de pestañas flotante abajo (zona del pulgar).
  */
 export function AppLayout() {
   const location = useLocation()
@@ -29,19 +29,8 @@ export function AppLayout() {
   const [scrolled, setScrolled] = useState(false)
   useNotificationSync()
 
-  // Móvil: el banner superior se oculta al bajar y reaparece al subir (más espacio al leer).
-  // Umbral de 8px para ignorar temblores; cerca del inicio siempre visible.
-  const [bannerHidden, setBannerHidden] = useState(false)
   useEffect(() => {
-    let last = window.scrollY
-    const onScroll = () => {
-      const y = window.scrollY
-      setScrolled(y > 48)
-      if (y < 80) setBannerHidden(false)
-      else if (y - last > 8) setBannerHidden(true)
-      else if (last - y > 8) setBannerHidden(false)
-      if (Math.abs(y - last) > 8 || y < 80) last = y
-    }
+    const onScroll = () => setScrolled(window.scrollY > 48)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -120,24 +109,21 @@ export function AppLayout() {
       />
 
       {/* ── Móvil: banner superior (Liquid Glass, como en escritorio): nombre centrado, amigos a la
-          izquierda y notificaciones a la derecha (sus paneles bajan desde arriba). Se oculta al
-          bajar y vuelve al subir. ── */}
+          izquierda y notificaciones a la derecha (sus paneles nacen del botón). Fijo. ── */}
       <header
-        inert={bannerHidden}
         className={cn(
-          'glass-bar glass-nav fixed inset-x-0 top-0 z-40 border-b pt-[calc(env(safe-area-inset-top)+0.75rem)] transition-[transform,border-color] duration-300 ease-[var(--ease-drawer)] motion-reduce:transition-none md:hidden',
-          bannerHidden ? '-translate-y-full' : 'translate-y-0',
+          'glass-bar glass-nav fixed inset-x-0 top-0 z-40 border-b pt-[env(safe-area-inset-top)] transition-[border-color] duration-200 md:hidden',
           scrolled ? 'border-separator' : 'border-transparent',
         )}
       >
-        <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center px-4">
+        <div className="grid h-13 grid-cols-[1fr_auto_1fr] items-center px-2">
           <FriendsButton className="justify-self-start" />
           {/* Solo el nombre: lleva a Progreso, arriba del todo */}
           <NavLink
             to="/dashboard"
             aria-label="TalkIO, ir a Progreso"
             onClick={(e) => scrollTopIfActive(e, '/dashboard')}
-            className="flex items-center self-stretch rounded-full px-3 font-display text-[1.375rem] leading-none font-semibold tracking-[-0.02em]"
+            className="flex items-center self-stretch rounded-full px-3 font-display text-[1.1875rem] leading-none font-semibold tracking-[-0.02em]"
           >
             TalkIO
           </NavLink>
@@ -177,7 +163,7 @@ export function AppLayout() {
       {/* key → fundido corto al cambiar de pantalla (frecuente: solo opacidad, 180ms) */}
       <main
         key={location.pathname}
-        className="animate-page mx-auto max-w-7xl px-4 pt-[calc(6.5rem+env(safe-area-inset-top))] pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-12 md:pb-16 lg:px-10"
+        className="animate-page mx-auto max-w-7xl px-4 pt-[calc(4.75rem+env(safe-area-inset-top))] pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-12 md:pb-16 lg:px-10"
       >
         <Outlet />
       </main>

@@ -13,7 +13,7 @@ export function Panels() {
       onClose={closePanel}
       label={panel === 'notifications' ? 'Notificaciones' : 'Amigos'}
       // Nace del botón del banner: amigos a la izquierda, notificaciones a la derecha
-      origin={panel === 'notifications' ? 'calc(100% - 26px) 28px' : '26px 28px'}
+      origin={panel === 'notifications' ? 'calc(100% - 18px) 10px' : '18px 10px'}
     >
       {(dismiss) =>
         panel === 'notifications' ? (
