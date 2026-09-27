@@ -1,0 +1,308 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Apariencia: sigue al sistema por defecto; <html data-theme="light|dark"> la
+   fuerza (selector Automático / Claro / Oscuro). Cada token se define una sola
+   vez con light-dark(claro, oscuro).
+   Contrastes (WCAG): label 16.8:1 / 19.3:1 · label-2 5.1:1 / 6.6:1 ·
+   blanco sobre accent 4.7:1 · link 5.6:1 · success 5.3:1 / 8.4:1 · danger 5.4:1 / 6.0:1
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* dark: de Tailwind respeta tanto el sistema como la elección manual */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme="light"], [data-theme="light"] *)) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  --bg: light-dark(#ffffff, #000000);
+  --bg-grouped: light-dark(#f5f5f7, #161617);
+  --surface: light-dark(#ffffff, #1c1c1e);
+  --label: light-dark(#1d1d1f, #f5f5f7);
+  --label-2: light-dark(#6e6e73, #a1a1a6);
+  --label-3: light-dark(#86868b, #6e6e73); /* solo decorativo / deshabilitado */
+  --separator: light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.12));
+  --field-border: light-dark(#86868b, #6e6e73);
+  --fill: light-dark(rgb(118 118 128 / 0.12), rgb(118 118 128 / 0.24));
+  --thumb: light-dark(#ffffff, #636366);
+  --accent: #0071e3;
+  --accent-press: #0062c4;
+  --link: light-dark(#0066cc, #2997ff);
+  /* Acento como TEXTO (pequeño): pasa 4.5:1 en ambos modos (5.6:1); --accent queda para rellenos */
+  --accent-text: light-dark(#0066cc, #2997ff);
+  --success: light-dark(#1e7b34, #30d158);
+  --danger: light-dark(#d70015, #ff6961);
+  --streak: light-dark(#c93400, #ff9f0a);
+  --shadow-card:
+    0 1px 2px light-dark(rgb(0 0 0 / 0.04), transparent),
+    0 8px 28px light-dark(rgb(0 0 0 / 0.06), transparent),
+    0 0 0 1px light-dark(transparent, rgb(255 255 255 / 0.06));
+
+  /* Liquid Glass (regular). liquid-glass.md › Cross-platform translation:
+     blur 20–40px, relleno 60–80%, saturación 1.2–1.5×, borde translúcido de 1px */
+  --glass-fill: light-dark(rgb(255 255 255 / 0.6), rgb(30 30 32 / 0.55));
+  --glass-fill-thick: light-dark(rgb(255 255 255 / 0.74), rgb(30 30 32 / 0.68));
+  --glass-border: light-dark(rgb(255 255 255 / 0.75), rgb(255 255 255 / 0.14));
+  --glass-highlight: light-dark(rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.18));
+  --glass-shadow: light-dark(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.45));
+}
+
+/* Contraste aumentado (color.md › Best practices) */
+@media (prefers-contrast: more) {
+  :root {
+    --label-2: light-dark(#48484a, #c7c7cc);
+    --field-border: light-dark(#3a3a3c, #aeaeb2);
+    --separator: light-dark(rgb(0 0 0 / 0.3), rgb(255 255 255 / 0.35));
+    --accent: #0058b0;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-grouped: var(--bg-grouped);
+  --color-surface: var(--surface);
+  --color-label: var(--label);
+  --color-label-2: var(--label-2);
+  --color-label-3: var(--label-3);
+  --color-separator: var(--separator);
+  --color-field-border: var(--field-border);
+  --color-fill: var(--fill);
+  --color-thumb: var(--thumb);
+  --color-accent: var(--accent);
+  --color-accent-press: var(--accent-press);
+  --color-link: var(--link);
+  --color-accent-text: var(--accent-text);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-streak: var(--streak);
+}
+
+@theme {
+  /* SF Pro en dispositivos Apple; Inter (lo más cercano) en el resto */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
+
+  /* Escala tipográfica (body 17px, mínimo 13px) */
+  --text-display: 3.5rem;
+  --text-display--line-height: 1.07;
+  --text-display--letter-spacing: -0.03em;
+  --text-title-1: 1.75rem;
+  --text-title-1--line-height: 1.18;
+  --text-title-1--letter-spacing: -0.02em;
+  --text-title-2: 1.375rem;
+  --text-title-2--line-height: 1.27;
+  --text-title-2--letter-spacing: -0.015em;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.47;
+  --text-body--letter-spacing: -0.022em;
+  --text-callout: 0.9375rem;
+  --text-callout--line-height: 1.4;
+  --text-callout--letter-spacing: -0.012em;
+  --text-footnote: 0.8125rem;
+  --text-footnote--line-height: 1.38;
+  --text-footnote--letter-spacing: -0.006em;
+
+  /* Curvas (emil-design-eng): ease-out fuerte para UI, ease-in-out para movimiento en pantalla */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  /* Curva tipo iOS para hojas y cajones (Ionic) */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Un spinner rápido hace que la carga se perciba más corta */
+  --animate-spin-fast: spin-fast 600ms linear infinite;
+  @keyframes spin-fast {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--label);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  letter-spacing: var(--text-body--letter-spacing);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
+/* ─── Liquid Glass: solo capa funcional (navbar, panel de acceso) ─────────── */
+@utility glass {
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 10px 40px -8px var(--glass-shadow);
+}
+/* Superficies grandes o con mucho texto: más opacas (liquid-glass.md › Color on glass) */
+@utility glass-thick {
+  background: var(--glass-fill-thick);
+  -webkit-backdrop-filter: blur(36px) saturate(1.5);
+  backdrop-filter: blur(36px) saturate(1.5);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 -1px 0 light-dark(rgb(255 255 255 / 0.35), rgb(255 255 255 / 0.05)),
+    0 24px 64px -16px var(--glass-shadow);
+}
+/* Barras (superior / inferior de ancho completo): el material sin borde perimetral ni sombra.
+   La separación con el contenido la da una línea fina (toolbars.md › "Reduce the use of
+   toolbar backgrounds"); el borde y el brillo de .glass son solo para piezas flotantes. */
+@utility glass-bar {
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+
+/* Reducir transparencia → opaco; más contraste → borde marcado */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-bar,
+  .glass,
+  .glass-thick {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .glass-bar,
+  .glass,
+  .glass-thick {
+    background: var(--surface);
+    border-color: var(--field-border);
+  }
+}
+
+/* ─── Movimiento ──────────────────────────────────────────────────────────── */
+
+/* Entrada de elementos (primera vez): opacidad + 12px, sin partir de scale(0) */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.animate-enter {
+  animation: enter 500ms var(--ease-out) both;
+  animation-delay: calc(var(--stagger, 0) * 60ms);
+}
+
+/* Cambio de pantalla: frecuente → solo opacidad, corto */
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+.animate-page {
+  animation: fade 180ms var(--ease-out) both;
+}
+
+/* Mensajes que aparecen (errores, confirmaciones) */
+.appear {
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Tarjeta de ejercicio nueva: entra desde la derecha (sigue el avance de la lección) */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+.animate-card {
+  animation: card-in 320ms var(--ease-out) both;
+}
+
+/* Hoja inferior de retroalimentación: sube desde abajo con curva de cajón iOS */
+.sheet {
+  transition: transform 380ms var(--ease-drawer);
+  @starting-style {
+    transform: translateY(100%);
+  }
+}
+
+/* Resultado de un control (opción, casilla): pequeño pulso al calificarse */
+@keyframes settle {
+  from {
+    transform: scale(0.97);
+  }
+}
+.animate-settle {
+  animation: settle 220ms var(--ease-out);
+}
+
+/* Movimiento reducido: menos y más suave, no cero. Se conserva la opacidad. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-enter {
+    animation-name: fade;
+    animation-duration: 200ms;
+    animation-delay: 0ms;
+  }
+  .appear,
+  .sheet {
+    @starting-style {
+      transform: none;
+      opacity: 0;
+    }
+  }
+  .sheet {
+    transition: opacity 200ms ease;
+  }
+  .animate-card {
+    animation-name: fade;
+  }
+  .animate-settle {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
