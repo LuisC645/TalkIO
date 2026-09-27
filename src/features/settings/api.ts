@@ -8,6 +8,8 @@ export type ProfilePatch = Partial<{
   daily_goal_xp: number
   daily_goal_minutes: number
   interests: string[]
+  username: string | null
+  browser_notifications: boolean
 }>
 
 export function useUpdateProfile() {

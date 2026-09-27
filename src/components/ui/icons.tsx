@@ -55,3 +55,10 @@ export const PencilIcon = ({ className }: { className?: string }) => (
     <path d="M12.5 4.5 15.5 7.5M4 16l.9-3.6 8.9-8.9a1.4 1.4 0 0 1 2 0l.7.7a1.4 1.4 0 0 1 0 2l-8.9 8.9L4 16Z" />
   </svg>
 )
+export const PeopleIcon = ({ className }: { className?: string }) => (
+  <svg {...base} className={className}>
+    <circle cx="7.5" cy="7" r="3" />
+    <path d="M2.5 16.5c.4-2.8 2.4-4.5 5-4.5s4.6 1.7 5 4.5" />
+    <path d="M13 4.2a2.8 2.8 0 0 1 0 5.6M14.8 12.3c1.5.5 2.5 2 2.7 4.2" />
+  </svg>
+)

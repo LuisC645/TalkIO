@@ -26,11 +26,14 @@ export function InterestsEditor({ value, onChange }: { value: string[]; onChange
     setDraft('')
   }
 
-  const chip = 'flex min-h-11 items-center gap-1.5 rounded-full px-4 text-callout font-medium transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]'
+  // Móvil: cuadrícula de 2 columnas con chips del mismo ancho (36px de alto, texto centrado);
+  // desde sm: chips compactos de 32px que fluyen en línea
+  const chip =
+    'flex min-h-9 min-w-0 items-center justify-center gap-1 rounded-full px-3 text-footnote font-medium transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] sm:min-h-8 sm:justify-start'
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Intereses sugeridos">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-1.5" role="group" aria-label="Intereses sugeridos">
         {[...SUGGESTED_INTERESTS, ...custom].map((it) => {
           const on = lower.includes(it.toLowerCase())
           return (
@@ -38,12 +41,13 @@ export function InterestsEditor({ value, onChange }: { value: string[]; onChange
               key={it}
               type="button"
               aria-pressed={on}
+              title={it}
               disabled={!on && full}
               onClick={() => toggle(it)}
-              className={cn(chip, on ? 'bg-accent text-white' : 'bg-surface text-label hover:bg-fill disabled:opacity-40')}
+              className={cn(chip, on ? 'bg-accent text-white' : 'bg-fill text-label hover:bg-label/10 disabled:opacity-40')}
             >
-              {on && <CheckIcon className="size-4" />}
-              {it}
+              {on && <CheckIcon className="-ml-0.5 size-3 shrink-0" />}
+              <span className="truncate">{it}</span>
             </button>
           )
         })}
@@ -58,7 +62,7 @@ export function InterestsEditor({ value, onChange }: { value: string[]; onChange
           value={draft}
           maxLength={MAX_LENGTH}
           disabled={full}
-          placeholder={full ? `Máximo ${MAX_INTERESTS} intereses` : 'Escribe otro interés (p. ej. fotografía)'}
+          placeholder={full ? `Máximo ${MAX_INTERESTS} intereses` : 'Otro interés, p. ej. cocina'}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

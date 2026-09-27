@@ -16,6 +16,21 @@ const BASE_PROMPTS = [
   'What would you do with unlimited money?',
   'Tell me about a trip you remember.',
   'What is your dream job and why?',
+  'Describe a person who inspires you.',
+  'What is the best advice you have ever received?',
+  'Tell me about a mistake you learned from.',
+  'What would you change about your city?',
+  'Describe your perfect weekend.',
+  'What is a skill you want to learn this year?',
+  'Tell me about your favorite meal and how to make it.',
+  'Is social media good or bad for young people? Why?',
+  'Describe a movie or series you recommend.',
+  'What did you do yesterday, from morning to night?',
+  'Where would you like to live in ten years?',
+  'Tell me about a difficult day and how you handled it.',
+  'What makes a good friend?',
+  'Describe a technology you could not live without.',
+  'What is something you are proud of?',
 ]
 
 // Intereses del test de nivel (en español) → tema en inglés para la consigna
@@ -48,8 +63,14 @@ export function WritePage() {
   const [shown, setShown] = useState<{ entry: Pick<WritingEntry, 'text' | 'score' | 'feedback' | 'prompt'>; xp?: number; newPatterns?: string[] } | null>(null)
   const resultRef = useRef<HTMLDivElement>(null)
 
-  const interests = ((profile?.interests as string[] | undefined) ?? []).slice(0, 2)
-  const prompts = [...interests.map((i) => `Write about ${INTEREST_EN[i] ?? i}.`), ...BASE_PROMPTS].slice(0, 5)
+  const interests = (profile?.interests as string[] | undefined) ?? []
+  // Sugerencia aleatoria (solo una recomendación): banco general + temas de tus intereses
+  const pool = [...interests.map((i) => `Write about ${INTEREST_EN[i] ?? i}.`), ...BASE_PROMPTS]
+  const [suggestion, setSuggestion] = useState(() => pool[Math.floor(Math.random() * pool.length)])
+  function nextSuggestion() {
+    const others = pool.filter((p) => p !== suggestion)
+    setSuggestion(others[Math.floor(Math.random() * others.length)] ?? suggestion)
+  }
   const words = countWords(text)
   const hints = liveHints(text)
 
@@ -75,37 +96,49 @@ export function WritePage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-10">
+    <div className="animate-stagger mx-auto flex max-w-3xl flex-col gap-10">
       <PageHeader title="Escribir" subtitle="Escribe lo que quieras en inglés y recibe corrección al instante." />
 
       <section className="flex flex-col gap-4">
-        {/* Ideas: opcionales, fijan la consigna del texto */}
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]" role="group" aria-label="Ideas para escribir">
-          {prompts.map((p) => {
-            const on = prompt === p
-            return (
+        {/* Sugerencia aleatoria: solo una recomendación; se puede escribir sobre cualquier cosa */}
+        {!prompt && (
+          <div className="flex flex-col gap-3 rounded-[22px] bg-surface p-4 sm:flex-row sm:items-center sm:p-5">
+            <div className="min-w-0 flex-1">
+              <p className="text-footnote font-medium text-label-2">Sugerencia (opcional)</p>
+              <p key={suggestion} className="appear mt-0.5 text-callout font-semibold" lang="en">
+                {suggestion}
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-2">
               <button
-                key={p}
                 type="button"
-                aria-pressed={on}
-                onClick={() => setPrompt(on ? null : p)}
-                lang="en"
-                className={cn(
-                  'min-h-10 shrink-0 rounded-full px-4 text-footnote font-medium transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]',
-                  on ? 'bg-accent text-white' : 'bg-surface text-label hover:bg-fill',
-                )}
+                onClick={nextSuggestion}
+                className="min-h-10 rounded-full bg-fill px-4 text-footnote font-semibold text-label transition-transform duration-150 ease-out active:scale-[0.97]"
               >
-                {p}
+                Otra idea
               </button>
-            )
-          })}
-        </div>
+              <button
+                type="button"
+                onClick={() => setPrompt(suggestion)}
+                className="min-h-10 rounded-full px-4 text-footnote font-semibold text-link transition-[background-color,transform] duration-150 ease-out hover:bg-fill active:scale-[0.97]"
+              >
+                Usar este tema
+              </button>
+            </div>
+          </div>
+        )}
+        <p className="-mt-2 px-1 text-footnote text-label-2">Es solo una recomendación: puedes escribir sobre lo que quieras.</p>
 
         <div className="overflow-hidden rounded-[22px] bg-surface">
           {prompt && (
-            <p className="border-b border-separator px-5 pt-4 pb-3 text-callout font-semibold" lang="en">
-              {prompt}
-            </p>
+            <div className="flex items-center gap-3 border-b border-separator px-5 pt-4 pb-3">
+              <p className="min-w-0 flex-1 text-callout font-semibold" lang="en">
+                {prompt}
+              </p>
+              <button type="button" onClick={() => setPrompt(null)} className="min-h-9 shrink-0 rounded-full px-3 text-footnote font-medium text-link hover:bg-fill">
+                Quitar tema
+              </button>
+            </div>
           )}
           <textarea
             aria-label="Tu texto en inglés"

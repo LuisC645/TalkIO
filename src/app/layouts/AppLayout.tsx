@@ -1,9 +1,13 @@
 import { useEffect, useState, type ComponentType } from 'react'
-import { NavLink, Outlet, useLocation, useMatches } from 'react-router'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import { BookIcon, CardsIcon, ChartIcon, GearIcon, PencilIcon } from '@/components/ui/icons'
 import { Wordmark } from '@/components/ui/Wordmark'
 import { useProfile } from '@/features/auth/hooks/useProfile'
+import { FriendsButton } from '@/features/friends/FriendsButton'
+import { useNotificationSync } from '@/features/notifications/api'
+import { Bell } from '@/features/notifications/Bell'
 import { cn } from '@/lib/cn'
+import { Panels } from './Panels'
 
 const NAV: { to: string; label: string; icon: ComponentType<{ className?: string }> }[] = [
   { to: '/dashboard', label: 'Progreso', icon: ChartIcon },
@@ -13,27 +17,17 @@ const NAV: { to: string; label: string; icon: ComponentType<{ className?: string
   { to: '/settings', label: 'Ajustes', icon: GearIcon },
 ]
 
-/** Pantallas declaran su título en el router: handle: { title } */
-function useRouteTitle() {
-  const matches = useMatches()
-  const handle = [...matches].reverse().find((m) => (m.handle as { title?: string } | undefined)?.title)?.handle as
-    | { title: string }
-    | undefined
-  return handle?.title ?? ''
-}
-
 /**
- * Navegación estilo iOS / iPadOS (capa funcional, Liquid Glass):
- * - ≥ md: barra superior de ancho completo, sin borde perimetral (solo una línea fina).
- * - < md: sin barra con el nombre de la app (toolbars.md › "Don't title windows with your app name").
- *   Arriba, efecto de borde de scroll y título compacto al desplazarse; abajo, barra de pestañas
- *   flotante (tab-bars.md › "A tab bar floats above content at the bottom of the screen").
+ * Navegación (capa funcional, Liquid Glass):
+ * - ≥ md: barra superior de ancho completo, sin borde perimetral (solo una línea fina al desplazarse).
+ * - < md: barra de pestañas flotante fija arriba, con margen lateral y del área segura; abajo a la
+ *   derecha, botones flotantes de notificaciones y amigos (zona del pulgar).
  */
 export function AppLayout() {
   const location = useLocation()
-  const title = useRouteTitle()
   const { data: profile } = useProfile()
   const [scrolled, setScrolled] = useState(false)
+  useNotificationSync()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 48)
@@ -78,50 +72,31 @@ export function AppLayout() {
               ))}
             </ul>
           </nav>
-          <NavLink
-            to="/settings"
-            aria-label="Ajustes y cuenta"
-            title="Ajustes y cuenta"
-            className="flex size-10 items-center justify-center justify-self-end rounded-full bg-fill text-callout font-semibold text-label transition-transform duration-150 ease-out active:scale-[0.97]"
-          >
-            {initial}
-          </NavLink>
+          <div className="flex items-center gap-1 justify-self-end">
+            <FriendsButton />
+            <Bell />
+            <NavLink
+              to="/settings"
+              aria-label="Ajustes y cuenta"
+              title="Ajustes y cuenta"
+              className="flex size-10 items-center justify-center rounded-full bg-fill text-callout font-semibold text-label transition-transform duration-150 ease-out active:scale-[0.97]"
+            >
+              {initial}
+            </NavLink>
+          </div>
         </div>
       </header>
 
-      {/* ── Móvil: efecto de borde de scroll + título compacto ── */}
+      {/* Móvil: borde de desplazamiento; el contenido se desvanece bajo la barra en vez de chocar */}
       <div
-        aria-hidden={!scrolled}
-        className="pointer-events-none fixed inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)] md:hidden"
-      >
-        <div
-          className={cn(
-            'glass-bar absolute inset-0 border-b transition-opacity duration-200 [mask-image:linear-gradient(to_bottom,black_70%,transparent)]',
-            scrolled ? 'border-separator/0 opacity-100' : 'opacity-0',
-          )}
-        />
-        <p
-          className={cn(
-            'relative flex h-12 items-center justify-center text-body font-semibold transition-[opacity,transform] duration-200 ease-out',
-            scrolled ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0',
-          )}
-        >
-          {title}
-        </p>
-      </div>
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[calc(6rem+env(safe-area-inset-top))] bg-gradient-to-b from-bg-grouped from-40% to-transparent md:hidden"
+      />
 
-      {/* key → fundido corto al cambiar de pantalla (frecuente: solo opacidad, 180ms) */}
-      <main
-        key={location.pathname}
-        className="animate-page mx-auto max-w-7xl px-4 pt-[calc(3.75rem+env(safe-area-inset-top))] pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-12 md:pb-16 lg:px-10"
-      >
-        <Outlet />
-      </main>
-
-      {/* ── Móvil: barra de pestañas flotante ── */}
+      {/* ── Móvil: barra de pestañas flotante, fija arriba ── */}
       <nav
         aria-label="Secciones"
-        className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
+        className="fixed inset-x-0 top-0 z-30 flex justify-center px-4 pt-[calc(1rem+env(safe-area-inset-top))] md:hidden"
       >
         <ul className="glass grid h-16 w-full max-w-lg grid-cols-5 rounded-full p-1">
           {NAV.map(({ to, label, icon: Icon }) => (
@@ -142,6 +117,22 @@ export function AppLayout() {
           ))}
         </ul>
       </nav>
+
+      {/* Móvil: botones flotantes abajo a la derecha (notificaciones encima de amigos) */}
+      <div className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex flex-col items-center gap-3 md:hidden">
+        <Bell floating />
+        <FriendsButton floating />
+      </div>
+      <Panels />
+
+      {/* key → fundido corto al cambiar de pantalla (frecuente: solo opacidad, 180ms) */}
+      <main
+        key={location.pathname}
+        className="animate-page mx-auto max-w-7xl px-4 pt-[calc(7.5rem+env(safe-area-inset-top))] pb-[calc(10rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-12 md:pb-16 lg:px-10"
+      >
+        <Outlet />
+      </main>
+
     </div>
   )
 }

@@ -139,8 +139,18 @@ body,
   min-height: 100%;
 }
 
+/* Fondo de página completa = fondo de la pantalla (Safari pinta con él la zona de la Dynamic
+   Island y de la barra de la URL). App: agrupado; landing: liso (ver src/lib/surface.ts). */
+html,
 body {
+  background: var(--bg-grouped);
+}
+html[data-surface='plain'],
+html[data-surface='plain'] body {
   background: var(--bg);
+}
+
+body {
   color: var(--label);
   font-family: var(--font-sans);
   font-size: var(--text-body);
@@ -223,6 +233,17 @@ body {
   animation-delay: calc(var(--stagger, 0) * 60ms);
 }
 
+/* Pantalla que se abre: sus bloques entran escalonados (misma entrada que Progreso y Lecciones) */
+.animate-stagger > * {
+  animation: enter 500ms var(--ease-out) both;
+}
+.animate-stagger > :nth-child(2) { animation-delay: 60ms; }
+.animate-stagger > :nth-child(3) { animation-delay: 120ms; }
+.animate-stagger > :nth-child(4) { animation-delay: 180ms; }
+.animate-stagger > :nth-child(5) { animation-delay: 240ms; }
+.animate-stagger > :nth-child(6) { animation-delay: 300ms; }
+.animate-stagger > :nth-child(n + 7) { animation-delay: 360ms; }
+
 /* Cambio de pantalla: frecuente → solo opacidad, corto */
 @keyframes fade {
   from {
@@ -263,6 +284,35 @@ body {
   }
 }
 
+/* Panel lateral (amigos): hoja inferior en móvil, cajón a la derecha desde md */
+.drawer {
+  transition: transform 380ms var(--ease-drawer);
+  @starting-style {
+    transform: translateY(100%);
+  }
+  &[data-closing] {
+    transform: translateY(100%);
+    transition-duration: 240ms;
+  }
+  @media (min-width: 48rem) {
+    @starting-style {
+      transform: translateX(calc(100% + 1rem));
+    }
+    &[data-closing] {
+      transform: translateX(calc(100% + 1rem));
+    }
+  }
+}
+.backdrop {
+  transition: opacity 300ms ease;
+  @starting-style {
+    opacity: 0;
+  }
+  &[data-closing] {
+    opacity: 0;
+  }
+}
+
 /* Resultado de un control (opción, casilla): pequeño pulso al calificarse */
 @keyframes settle {
   from {
@@ -275,20 +325,27 @@ body {
 
 /* Movimiento reducido: menos y más suave, no cero. Se conserva la opacidad. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-enter {
+  .animate-enter,
+  .animate-stagger > * {
     animation-name: fade;
     animation-duration: 200ms;
     animation-delay: 0ms;
   }
   .appear,
-  .sheet {
+  .sheet,
+  .drawer {
     @starting-style {
       transform: none;
       opacity: 0;
     }
   }
-  .sheet {
+  .sheet,
+  .drawer {
     transition: opacity 200ms ease;
+  }
+  .drawer[data-closing] {
+    transform: none;
+    opacity: 0;
   }
   .animate-card {
     animation-name: fade;

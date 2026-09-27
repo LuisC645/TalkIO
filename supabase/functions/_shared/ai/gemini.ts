@@ -2,7 +2,7 @@ import { fallbacksFor, modelFor } from './models.ts'
 import { AIError, type AIProvider, type GenerateJSONRequest, type GenerateJSONResult } from './provider.ts'
 
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
-const TIMEOUT_MS = 90_000
+const TIMEOUT_MS = 60_000
 // Ante saturación (429/5xx): un reintento del modelo principal y luego el modelo de respaldo
 const RETRY_DELAY_MS = 1500
 
@@ -35,6 +35,8 @@ export class GeminiProvider implements AIProvider {
       } catch (err) {
         lastError = err
         if (!(err instanceof AIError) || !err.transient) throw err
+        // Timeout / sin red: no seguir probando modelos (cada uno esperaría el timeout completo)
+        if (err.message.startsWith('Gemini sin respuesta')) throw err
         if (i === 0) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
       }
     }

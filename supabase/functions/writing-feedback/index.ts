@@ -72,7 +72,8 @@ serve(async (req) => {
     .gte('created_at', since)
   let xp = 0
   if ((count ?? 0) < XP_ENTRIES_PER_DAY) {
-    xp = w.fallback ? 3 : Math.round(3 + 12 * w.score) // revisión básica sin IA: XP mínimo
+    // ~2 XP por minuto (un texto ≈ 3-4 min); revisión básica sin IA: XP mínimo
+    xp = w.fallback ? 2 : Math.round(2 + 6 * w.score)
     await admin.rpc('award_xp', { p_user_id: user.id, p_amount: xp, p_source: 'writing', p_ref_id: entry.id })
   }
 

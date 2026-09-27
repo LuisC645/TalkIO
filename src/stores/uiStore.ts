@@ -1,13 +1,16 @@
 import { create } from 'zustand'
 
+/** Paneles laterales de la capa funcional (hoja inferior en móvil, cajón a la derecha desde md) */
+export type Panel = 'friends' | 'notifications'
+
 type UiState = {
-  sidebarOpen: boolean
-  toggleSidebar: () => void
-  closeSidebar: () => void
+  panel: Panel | null
+  openPanel: (panel: Panel) => void
+  closePanel: () => void
 }
 
 export const useUiStore = create<UiState>((set) => ({
-  sidebarOpen: false,
-  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  closeSidebar: () => set({ sidebarOpen: false }),
+  panel: null,
+  openPanel: (panel) => set({ panel }),
+  closePanel: () => set({ panel: null }),
 }))

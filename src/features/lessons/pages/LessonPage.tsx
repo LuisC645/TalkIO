@@ -13,6 +13,7 @@ import { FeedbackSheet } from '../components/FeedbackSheet'
 import { PlayerBar } from '../components/PlayerBar'
 import { CompletionStage, IntroStage, RuleStage } from '../components/Stages'
 import type { ExerciseResponse, GradeResult } from '../types'
+import { playSound } from '@/lib/sound'
 
 /**
  * Reproductor de lección (pantalla completa, sin la navegación de la app):
@@ -52,6 +53,7 @@ export function LessonPage() {
     if (isLast || completed || session.result?.lesson.completed) {
       queryClient.invalidateQueries({ queryKey: lessonKeys.detail(lessonId) })
       patterns.refetch()
+      playSound('complete')
       session.setStage('done')
       return
     }
@@ -66,6 +68,9 @@ export function LessonPage() {
       { exercise_id: current.id, response: draft, duration_ms: Date.now() - session.shownAt },
       {
         onSuccess: (result: GradeResult) => {
+          // En examen no se revela si acertó: sonido neutro al registrar la respuesta
+          if (!isExam) playSound(result.is_correct ? 'correct' : 'wrong')
+          else if (!result.lesson.completed) playSound('flip')
           session.showResult(result)
           // En examen no hay retroalimentación por pregunta: se pasa directo a la siguiente
           if (isExam) advance(result.lesson.completed)

@@ -4,6 +4,7 @@ import { AppearanceControl } from '@/components/ui/AppearanceControl'
 import { FullScreenSpinner } from '@/components/ui/FullScreenSpinner'
 import { Wordmark } from '@/components/ui/Wordmark'
 import { AuthCard } from '@/features/auth/components/AuthCard'
+import { useSurface } from '@/lib/surface'
 import { useAuthStore } from '@/stores/authStore'
 import { CorrectionDemo } from '../components/CorrectionDemo'
 import { CorrectionWall } from '../components/CorrectionWall'
@@ -30,6 +31,7 @@ export function LandingPage() {
   const initialized = useAuthStore((s) => s.initialized)
   const location = useLocation()
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname
+  useSurface('plain')
 
   if (!initialized) return <FullScreenSpinner />
   if (session) return <Navigate to={from ?? '/dashboard'} replace />

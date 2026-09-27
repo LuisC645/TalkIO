@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Link } from 'react-router'
+import { Switch } from '@/components/ui/Switch'
+import { useWeeklyReports, weekLabel } from '../reports'
 import { GroupedList, Row } from '@/components/ui/GroupedList'
 import { InterestsEditor } from '@/components/ui/InterestsEditor'
 import { CheckIcon } from '@/components/ui/icons'
@@ -8,32 +11,42 @@ import { useProfile } from '@/features/auth/hooks/useProfile'
 import { DevPanel } from '@/features/settings/components/DevPanel'
 import { cn } from '@/lib/cn'
 import { DEV_TOOLS } from '@/lib/devTools'
+import { XP_PER_MINUTE } from '@/lib/xp'
 import { useAppearanceStore, type Appearance } from '@/stores/appearanceStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useSoundStore } from '@/stores/soundStore'
+import { useUiStore } from '@/stores/uiStore'
+import { playSound } from '@/lib/sound'
 import { useUpdateProfile, type ProfilePatch } from '../api'
 
-const XP_OPTIONS = [20, 30, 50, 80, 100, 150]
-const MINUTE_OPTIONS = [10, 15, 20, 25, 30, 45, 60]
+const MINUTE_OPTIONS = [10, 15, 20, 25, 30, 40, 45, 60]
+const USERNAME_RE = /^[a-z0-9_.]{3,20}$/
 
 /**
- * Ajustes estilo iOS: listas agrupadas. Nombre, meta diaria y tiempo por sesión se guardan
+ * Ajustes estilo iOS: listas agrupadas. Nombre y tiempo por sesión (con su meta en XP) se guardan
  * al cambiarlos (con confirmación "Guardado"). La apariencia sigue al sistema por defecto.
  * Cerrar sesión es destructivo: texto rojo y confirmación en dos pasos.
  */
 export function SettingsPage() {
   const { data: profile } = useProfile()
   const user = useAuthStore((s) => s.user)
+  const openPanel = useUiStore((s) => s.openPanel)
+  const soundOn = useSoundStore((s) => s.enabled)
+  const setSoundOn = useSoundStore((s) => s.setEnabled)
   const signOut = useAuthStore((s) => s.signOut)
   const appearance = useAppearanceStore((s) => s.appearance)
   const setAppearance = useAppearanceStore((s) => s.setAppearance)
   const update = useUpdateProfile()
+  const reports = useWeeklyReports()
   const [confirming, setConfirming] = useState(false)
+  const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [notifError, setNotifError] = useState<string | null>(null)
   const [saved, setSaved] = useState<keyof ProfilePatch | null>(null)
   const savedTimer = useRef(0)
 
   useEffect(() => () => window.clearTimeout(savedTimer.current), [])
 
-  function save(patch: ProfilePatch) {
+  function save(patch: ProfilePatch, onError?: (err: Error & { code?: string }) => void) {
     const field = Object.keys(patch)[0] as keyof ProfilePatch
     update.mutate(patch, {
       onSuccess: () => {
@@ -41,7 +54,28 @@ export function SettingsPage() {
         window.clearTimeout(savedTimer.current)
         savedTimer.current = window.setTimeout(() => setSaved(null), 1800)
       },
+      onError: onError as never,
     })
+  }
+
+  function saveUsername(value: string) {
+    const v = value.trim().replace(/^@/, '').toLowerCase()
+    if (!USERNAME_RE.test(v)) {
+      setUsernameError('Usa de 3 a 20 caracteres: letras minúsculas, números, punto o guion bajo.')
+      return
+    }
+    setUsernameError(null)
+    save({ username: v }, (err) => setUsernameError(err.code === '23505' ? 'Ese nombre de usuario ya está en uso.' : 'No se pudo guardar.'))
+  }
+
+  async function toggleBrowserNotifications(next: boolean) {
+    setNotifError(null)
+    if (next) {
+      if (!('Notification' in window)) return setNotifError('Tu navegador no admite notificaciones.')
+      const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
+      if (permission !== 'granted') return setNotifError('Permiso denegado. Actívalo desde la configuración del navegador.')
+    }
+    save({ browser_notifications: next })
   }
 
   const savedMark = (field: keyof ProfilePatch) =>
@@ -53,7 +87,7 @@ export function SettingsPage() {
     ) : null
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
+    <div className="animate-stagger mx-auto flex max-w-2xl flex-col gap-8">
       <PageHeader title="Ajustes" />
 
       <GroupedList header="Perfil">
@@ -66,8 +100,31 @@ export function SettingsPage() {
             {profile && <NameField key={profile.display_name ?? ''} initial={profile.display_name ?? ''} onSave={(v) => save({ display_name: v })} />}
           </span>
         </Row>
+        <Row>
+          <label htmlFor="username" className="shrink-0 text-body">
+            Usuario
+          </label>
+          <span className="flex min-w-0 items-center gap-2">
+            {savedMark('username')}
+            {profile && (
+              <NameField
+                id="username"
+                key={profile.username ?? ''}
+                initial={profile.username ?? ''}
+                placeholder="@elige_uno"
+                prefix="@"
+                onSave={saveUsername}
+              />
+            )}
+          </span>
+        </Row>
         <Row label="Email" detail={<span className="block max-w-[14rem] truncate sm:max-w-none">{user?.email ?? '—'}</span>} />
       </GroupedList>
+      {usernameError ? (
+        <p className="-mt-6 px-4 text-footnote text-danger">{usernameError}</p>
+      ) : (
+        <p className="-mt-6 px-4 text-footnote text-label-2">Tus amigos te encuentran por tu usuario y ven solo tu racha y tu nivel.</p>
+      )}
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between px-4">
@@ -86,24 +143,15 @@ export function SettingsPage() {
 
       <GroupedList
         header="Estudio"
-        footer="La meta diaria define cuántos XP necesitas para mantener tu racha. Los cambios se aplican desde tu próxima actividad."
+        footer={`Tu meta diaria en XP sale del tiempo por sesión (≈ ${XP_PER_MINUTE} XP por minuto). Los cambios cuentan desde tu próxima actividad.`}
       >
-        <SelectRow
-          id="goal-xp"
-          label="Meta diaria"
-          value={profile?.daily_goal_xp}
-          options={XP_OPTIONS}
-          format={(v) => `${v} XP`}
-          onChange={(v) => save({ daily_goal_xp: v })}
-          status={savedMark('daily_goal_xp')}
-        />
         <SelectRow
           id="goal-minutes"
           label="Tiempo por sesión"
           value={profile?.daily_goal_minutes}
           options={MINUTE_OPTIONS}
-          format={(v) => `${v} min`}
-          onChange={(v) => save({ daily_goal_minutes: v })}
+          format={(v) => `${v} min · ${v * XP_PER_MINUTE} XP`}
+          onChange={(v) => save({ daily_goal_minutes: v, daily_goal_xp: v * XP_PER_MINUTE })}
           status={savedMark('daily_goal_minutes')}
         />
         <Row label="Zona horaria" detail={profile?.timezone ?? '—'} />
@@ -126,8 +174,56 @@ export function SettingsPage() {
         </Row>
       </GroupedList>
 
-      <GroupedList header="Reportes semanales" footer="El reporte se genera cada lunes y lo verás aquí.">
-        <Row label="Reporte de esta semana" detail="Próximamente" />
+      <GroupedList header="Sonido" footer="Aciertos, errores y final de lección o de repaso. Se guarda en este dispositivo.">
+        <Row>
+          <span className="text-body">Sonidos en lecciones y repasos</span>
+          <Switch
+            label="Sonidos en lecciones y repasos"
+            checked={soundOn}
+            onChange={(next) => {
+              setSoundOn(next)
+              if (next) playSound('correct')
+            }}
+          />
+        </Row>
+      </GroupedList>
+
+      <GroupedList header="Notificaciones" footer={notifError ?? 'Recibe avisos de racha en riesgo, reportes y exámenes también fuera de la app mientras la tengas abierta en el navegador.'}>
+        <Row>
+          <span className="text-body">Notificaciones del navegador</span>
+          <Switch
+            label="Notificaciones del navegador"
+            checked={!!profile?.browser_notifications}
+            onChange={toggleBrowserNotifications}
+            disabled={!profile}
+          />
+        </Row>
+        <Row>
+          <button type="button" onClick={() => openPanel('notifications')} className="-my-2.5 flex min-h-12 w-full items-center justify-between text-left text-body">
+            Ver notificaciones
+            <Chevron />
+          </button>
+        </Row>
+      </GroupedList>
+
+      <GroupedList header="Reportes semanales" footer="Cada lunes se genera el resumen de tu semana anterior.">
+        {reports.isPending ? (
+          <Row label="Cargando…" />
+        ) : !reports.data?.length ? (
+          <Row label="Aún no hay reportes" detail="El primero llega el lunes" />
+        ) : (
+          reports.data.map((r) => (
+            <Row key={r.id}>
+              <Link to={`/settings/reports/${r.id}`} className="-my-2.5 flex min-h-12 w-full items-center justify-between gap-3 text-body">
+                <span>{weekLabel(r.week_start, r.week_end)}</span>
+                <span className="flex items-center gap-2 text-label-2">
+                  {(r.stats as { totals?: { xp: number } })?.totals?.xp ?? 0} XP
+                  <Chevron />
+                </span>
+              </Link>
+            </Row>
+          ))
+        )}
       </GroupedList>
 
       {DEV_TOOLS && <DevPanel />}
@@ -157,18 +253,40 @@ export function SettingsPage() {
   )
 }
 
-/** Campo de nombre alineado a la derecha (como en Ajustes de iOS). Guarda al salir o con Enter. */
-function NameField({ initial, onSave }: { initial: string; onSave: (value: string) => void }) {
-  const [value, setValue] = useState(initial)
+function Chevron() {
+  return (
+    <svg aria-hidden viewBox="0 0 20 20" className="size-4 shrink-0 fill-none stroke-label-3 stroke-2">
+      <path d="m7.5 4.5 5.5 5.5-5.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/** Campo alineado a la derecha (como en Ajustes de iOS). Guarda al salir o con Enter. */
+function NameField({
+  initial,
+  onSave,
+  id = 'display-name',
+  placeholder,
+  prefix,
+}: {
+  initial: string
+  onSave: (value: string) => void
+  id?: string
+  placeholder?: string
+  prefix?: string
+}) {
+  const [value, setValue] = useState(initial ? `${prefix ?? ''}${initial}` : '')
   const trimmed = value.trim()
   function commit() {
-    if (!trimmed) return setValue(initial)
-    if (trimmed !== initial) onSave(trimmed.slice(0, 60))
+    const clean = prefix && trimmed.startsWith(prefix) ? trimmed.slice(prefix.length) : trimmed
+    if (!clean) return setValue(initial ? `${prefix ?? ''}${initial}` : '')
+    if (clean !== initial) onSave(clean.slice(0, 60))
   }
   return (
     <input
-      id="display-name"
+      id={id}
       value={value}
+      placeholder={placeholder}
       maxLength={60}
       autoComplete="name"
       onChange={(e) => setValue(e.target.value)}

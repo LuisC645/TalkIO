@@ -22,7 +22,7 @@ export function AuthCallbackPage() {
 
   if (errorDescription || timedOut) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-bg px-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center">
         <h1 className="font-display text-title-2 font-semibold">No pudimos confirmar tu email</h1>
         <p className="max-w-sm text-callout text-label-2">
           El enlace puede haber expirado o ya se usó. Inicia sesión; si tu cuenta no está confirmada, regístrate de

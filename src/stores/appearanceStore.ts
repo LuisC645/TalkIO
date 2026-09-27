@@ -1,10 +1,10 @@
 import { create } from 'zustand'
+import { syncThemeColor } from '@/lib/surface'
 
 export type Appearance = 'system' | 'light' | 'dark'
 
 // La misma clave la lee el script en línea de index.html (evita el parpadeo al cargar)
 const STORAGE_KEY = 'talkio-appearance'
-const THEME_COLOR = { light: '#ffffff', dark: '#000000' }
 
 function read(): Appearance {
   try {
@@ -20,11 +20,8 @@ function apply(appearance: Appearance) {
   if (appearance === 'system') delete root.dataset.theme
   else root.dataset.theme = appearance
 
-  // Color de la barra del navegador: por media query en "system", fijo si se fuerza
-  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
-    const scheme = meta.media.includes('dark') ? 'dark' : 'light'
-    meta.content = THEME_COLOR[appearance === 'system' ? scheme : appearance]
-  }
+  // Color de la interfaz del navegador: el del fondo real de la página
+  syncThemeColor()
 }
 
 type AppearanceState = {

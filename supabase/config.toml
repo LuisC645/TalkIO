@@ -433,3 +433,6 @@ verify_jwt = false
 
 [functions.exams]
 verify_jwt = false
+
+[functions.notifications]
+verify_jwt = false

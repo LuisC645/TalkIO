@@ -337,6 +337,24 @@ export type Database = {
           },
         ]
       }
+      friendships: {
+        Row: {
+          created_at: string
+          friend_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lessons: {
         Row: {
           cefr_level: Database["public"]["Enums"]["cefr_level"]
@@ -441,6 +459,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          kind: string
+          link: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       placement_sessions: {
         Row: {
           completed_at: string | null
@@ -484,6 +538,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          browser_notifications: boolean
           cefr_level: Database["public"]["Enums"]["cefr_level"] | null
           cefr_plus: boolean
           created_at: string
@@ -497,9 +552,11 @@ export type Database = {
           onboarding_completed: boolean
           timezone: string
           updated_at: string
+          username: string | null
           weekly_report_email: boolean
         }
         Insert: {
+          browser_notifications?: boolean
           cefr_level?: Database["public"]["Enums"]["cefr_level"] | null
           cefr_plus?: boolean
           created_at?: string
@@ -513,9 +570,11 @@ export type Database = {
           onboarding_completed?: boolean
           timezone?: string
           updated_at?: string
+          username?: string | null
           weekly_report_email?: boolean
         }
         Update: {
+          browser_notifications?: boolean
           cefr_level?: Database["public"]["Enums"]["cefr_level"] | null
           cefr_plus?: boolean
           created_at?: string
@@ -529,6 +588,7 @@ export type Database = {
           onboarding_completed?: boolean
           timezone?: string
           updated_at?: string
+          username?: string | null
           weekly_report_email?: boolean
         }
         Relationships: []
@@ -1002,6 +1062,7 @@ export type Database = {
       }
     }
     Functions: {
+      add_friend: { Args: { p_username: string }; Returns: Json }
       award_xp: {
         Args: {
           p_amount: number
@@ -1021,6 +1082,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      get_friends: {
+        Args: never
+        Returns: {
+          active_today: boolean
+          cefr: string
+          current_streak: number
+          display_name: string
+          friend_id: string
+          level: number
+          username: string
+        }[]
       }
       get_weekly_stats: {
         Args: { p_user_id: string; p_week_start: string }
@@ -1064,10 +1137,12 @@ export type Database = {
         Returns: string
       }
       retake_lesson: { Args: { p_lesson_id: string }; Returns: number }
+      suggest_username: { Args: { p_base: string }; Returns: string }
       user_local_date: {
         Args: { p_at?: string; p_user_id: string }
         Returns: string
       }
+      username_available: { Args: { p_username: string }; Returns: boolean }
       xp_for_level: { Args: { p_level: number }; Returns: number }
     }
     Enums: {

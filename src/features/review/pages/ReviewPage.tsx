@@ -16,7 +16,7 @@ export function ReviewPage() {
   const maxForecast = Math.max(1, ...(data?.forecast.map((f) => f.count) ?? [1]))
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8">
+    <div className="animate-stagger mx-auto flex max-w-3xl flex-col gap-8">
       <PageHeader title="Repaso" subtitle="Repetición espaciada: cada tarjeta vuelve justo antes de que la olvides." />
 
       {/* Hoy: número protagonista + acción */}

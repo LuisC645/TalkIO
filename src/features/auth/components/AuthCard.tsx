@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -14,6 +14,24 @@ const PANEL = 'glass-thick rounded-[28px]'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD = 8
+const USERNAME_RE = /^[a-z0-9_.]{3,20}$/
+
+type UsernameStatus = 'idle' | 'checking' | 'free' | 'taken'
+
+/** "Sofía Pérez" → "sofia_perez" (mismo criterio que el servidor) */
+function slugify(name: string) {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 20)
+}
+
+function cleanUsername(value: string) {
+  return value.trim().replace(/^@/, '').toLowerCase()
+}
 
 const COPY: Record<Mode, { submit: string; passwordAutocomplete: string }> = {
   signin: { submit: 'Iniciar sesión', passwordAutocomplete: 'current-password' },
@@ -23,6 +41,13 @@ const COPY: Record<Mode, { submit: string; passwordAutocomplete: string }> = {
 export function AuthCard({ redirectTo = '/dashboard' }: { redirectTo?: string }) {
   const navigate = useNavigate()
   const [mode, setMode] = useState<Mode>('signin')
+  const [name, setName] = useState('')
+  const [nameError, setNameError] = useState<string | null>(null)
+  // @usuario: se sugiere desde el nombre hasta que la persona lo edita
+  const [username, setUsername] = useState('')
+  const [usernameEdited, setUsernameEdited] = useState(false)
+  const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [checked, setChecked] = useState<{ username: string; free: boolean | null } | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -47,18 +72,76 @@ export function AuthCard({ redirectTo = '/dashboard' }: { redirectTo?: string })
     return !error
   }
 
+  function validateName(value = name) {
+    const error = value.trim().length < 2 ? 'Escribe tu nombre.' : null
+    setNameError(error)
+    return !error
+  }
+
+  // Disponibilidad en vivo (con pausa de 400 ms para no consultar en cada tecla)
+  const candidate = cleanUsername(username)
+  const checkable = mode === 'signup' && USERNAME_RE.test(candidate)
+  const usernameStatus: UsernameStatus = !checkable
+    ? 'idle'
+    : checked?.username !== candidate
+      ? 'checking'
+      : checked.free === null
+        ? 'idle'
+        : checked.free
+          ? 'free'
+          : 'taken'
+
+  useEffect(() => {
+    if (!checkable) return
+    let cancelled = false
+    const t = window.setTimeout(async () => {
+      const { data, error } = await supabase.rpc('username_available', { p_username: candidate })
+      // Si la consulta falla, el servidor asigna uno libre igualmente al crear la cuenta
+      if (!cancelled) setChecked({ username: candidate, free: error ? null : !!data })
+    }, 400)
+    return () => {
+      cancelled = true
+      window.clearTimeout(t)
+    }
+  }, [candidate, checkable])
+
+  function validateUsername(value = username) {
+    const u = cleanUsername(value)
+    const error = !u
+      ? 'Elige un nombre de usuario.'
+      : USERNAME_RE.test(u)
+        ? null
+        : 'Usa de 3 a 20 caracteres: letras minúsculas, números, punto o guion bajo.'
+    setUsernameError(error)
+    return !error
+  }
+
+  function onNameChange(value: string) {
+    setName(value)
+    if (nameError) validateName(value)
+    if (!usernameEdited) {
+      setUsername(slugify(value))
+      setUsernameError(null)
+    }
+  }
+
   function switchMode(next: Mode) {
     setMode(next)
     setFormError(null)
     setPasswordError(null)
+    setNameError(null)
+    setUsernameError(null)
   }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setFormError(null)
+    const okName = mode === 'signup' ? validateName() : true
+    const okUsername = mode === 'signup' ? validateUsername() : true
     const okEmail = validateEmail()
     const okPassword = validatePassword()
-    if (!okEmail || !okPassword) return
+    if (!okName || !okUsername || !okEmail || !okPassword) return
+    if (mode === 'signup' && usernameStatus === 'taken') return setUsernameError('Ese nombre de usuario ya está en uso.')
 
     setLoading(true)
     try {
@@ -70,7 +153,12 @@ export function AuthCard({ redirectTo = '/dashboard' }: { redirectTo?: string })
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          // Nombre y @usuario llegan al perfil desde el alta (trigger handle_new_user). Si el
+          // @usuario se ocupó justo antes, el servidor asigna uno libre parecido.
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: { display_name: name.trim().replace(/\s+/g, ' ').slice(0, 60), username: cleanUsername(username) },
+          },
         })
         if (error) return setFormError(authErrorMessage(error))
         // Con confirmación de email activa, un email ya registrado devuelve un usuario sin identidades
@@ -131,6 +219,47 @@ export function AuthCard({ redirectTo = '/dashboard' }: { redirectTo?: string })
             { value: 'signup', label: 'Registro' },
           ]}
         />
+
+        {mode === 'signup' && (
+          <TextField
+            label="Nombre"
+            autoComplete="given-name"
+            autoCapitalize="words"
+            placeholder="¿Cómo te llamas?"
+            maxLength={60}
+            value={name}
+            error={nameError}
+            onChange={(e) => onNameChange(e.target.value)}
+            onBlur={() => name && validateName()}
+          />
+        )}
+
+        {mode === 'signup' && (
+          <TextField
+            label="Usuario"
+            autoComplete="username"
+            autoCapitalize="off"
+            spellCheck={false}
+            placeholder="tu_usuario"
+            maxLength={21}
+            value={username}
+            error={usernameError ?? (usernameStatus === 'taken' ? 'Ese nombre de usuario ya está en uso. Prueba otro.' : null)}
+            hint={
+              usernameStatus === 'checking'
+                ? 'Comprobando…'
+                : usernameStatus === 'free'
+                  ? `@${cleanUsername(username)} está disponible. Tus amigos te agregan con él.`
+                  : 'Tus amigos te agregan con él. Puedes cambiarlo en Ajustes.'
+            }
+            onChange={(e) => {
+              const v = e.target.value.replace(/\s/g, '').toLowerCase()
+              setUsername(v)
+              setUsernameEdited(true)
+              if (usernameError) validateUsername(v)
+            }}
+            onBlur={() => username && validateUsername()}
+          />
+        )}
 
         <TextField
           label="Email"

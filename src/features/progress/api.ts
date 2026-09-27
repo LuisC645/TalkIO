@@ -25,7 +25,7 @@ export function useProgress() {
   })
 }
 
-export type DayActivity = { date: string; xp: number; goalMet: boolean; isToday: boolean }
+export type DayActivity = { date: string; xp: number; minutes: number; goalMet: boolean; isToday: boolean }
 
 /** Últimos `days` días locales, con los días sin actividad rellenos en 0 */
 export function useDailyActivity(days: number) {
@@ -39,7 +39,7 @@ export function useDailyActivity(days: number) {
     queryFn: async (): Promise<DayActivity[]> => {
       const { data: rows, error } = await supabase
         .from('daily_activity')
-        .select('local_date, xp, goal_met')
+        .select('local_date, xp, goal_met, active_seconds')
         .gte('local_date', start)
         .lte('local_date', today)
         .order('local_date')
@@ -48,6 +48,7 @@ export function useDailyActivity(days: number) {
       return isoRange(start, days).map((date) => ({
         date,
         xp: byDate.get(date)?.xp ?? 0,
+        minutes: Math.round((byDate.get(date)?.active_seconds ?? 0) / 60),
         goalMet: byDate.get(date)?.goal_met ?? false,
         isToday: date === today,
       }))

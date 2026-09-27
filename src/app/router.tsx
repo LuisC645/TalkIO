@@ -10,6 +10,8 @@ import { AppLayout } from './layouts/AppLayout'
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <Navigate to="/" replace /> },
+  // Las notificaciones ahora son un cajón (campana); la ruta antigua lleva al inicio
+  { path: '/notifications', element: <Navigate to="/dashboard" replace /> },
   { path: '/auth/callback', element: <AuthCallbackPage /> },
   {
     element: <RequireAuth />,
@@ -53,6 +55,11 @@ export const router = createBrowserRouter([
                 path: '/write',
                 handle: { title: 'Escribir' },
                 lazy: async () => ({ Component: (await import('@/features/writing/pages/WritePage')).WritePage }),
+              },
+              {
+                path: '/settings/reports/:reportId',
+                handle: { title: 'Reporte' },
+                lazy: async () => ({ Component: (await import('@/features/settings/pages/ReportPage')).ReportPage }),
               },
               {
                 path: '/settings',

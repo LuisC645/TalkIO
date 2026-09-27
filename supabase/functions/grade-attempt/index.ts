@@ -13,9 +13,10 @@ import { assertDailyLimit, callAI } from '../_shared/usage.ts'
 
 const FUNCTION = 'grade-attempt'
 const MAX_AI_PER_DAY = 150
-const LESSON_BONUS_XP = 15
+// XP ≈ 2 por minuto de estudio: una lección de ~20 min da ~40 XP (meta por defecto: 50 XP ≈ 25 min)
+const LESSON_BONUS_XP = 5
 // Bonos al completar: exámenes valen más; repetir una lección no da bono
-const EXAM_BONUS_XP: Record<string, number> = { weekly_exam: 30, level_exam: 40 }
+const EXAM_BONUS_XP: Record<string, number> = { weekly_exam: 15, level_exam: 20 }
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 const Body = z.object({
@@ -132,13 +133,14 @@ serve(async (req) => {
     { source: 'exercise', attemptId: attempt.id, skip: touched },
   )
 
-  // XP: 2 por intentarlo + hasta 8 por acierto (escritura libre: 5 + hasta 15). Repetir: reducido.
+  // XP (~2 por minuto): 1 por intentarlo + hasta 4 por acierto (≈ 1-2 min por ejercicio);
+  // escritura libre (≈ 5 min): 3 + hasta 7. Repetir: reducido.
   const writing = exercise.type === 'free_writing'
   const xp = isRepeat
-    ? Math.round((writing ? 5 : 2) * grade.score)
+    ? Math.round((writing ? 2 : 1) * grade.score)
     : writing
-      ? Math.round(5 + 15 * grade.score)
-      : Math.round(2 + 8 * grade.score)
+      ? Math.round(3 + 7 * grade.score)
+      : Math.round(1 + 4 * grade.score)
   if (xp > 0) await admin.rpc('award_xp', { p_user_id: user.id, p_amount: xp, p_source: 'exercise', p_ref_id: attempt.id })
 
   const lesson = await updateLesson(admin, user.id, exercise.lesson_id)
@@ -429,6 +431,14 @@ async function applyLevelExam(admin: SupabaseClient, userId: string, meta: Recor
       overall_plus: update.cefr_plus,
       skills: last?.skills ?? {},
       notes: `Examen de nivel (${target}): ${score}/100.`,
+    })
+    await admin.from('notifications').insert({
+      user_id: userId,
+      kind: 'level_up',
+      title: passed ? `¡Subiste a ${newLevel}!` : `Avanzaste a ${newLevel}`,
+      body: `Aprobaste tu examen de nivel con ${score}/100. Tus próximas lecciones se ajustan a tu nuevo nivel.`,
+      link: '/dashboard',
+      dedupe_key: `level:${newLevel}`,
     })
   }
   return { from_level: from, new_level: newLevel }

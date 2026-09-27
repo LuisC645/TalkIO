@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn'
 import { formatInterval, Rating, scheduler, toCard, toRecordPayload, type Grade, type SrsRow } from '@/lib/srs'
 import { useRecordReview, useReviewQueue, type ReviewItem } from '../api'
 import { Flashcard } from '../components/Flashcard'
+import { playSound } from '@/lib/sound'
 
 const RELEARN_WINDOW_MS = 20 * 60_000 // lo que vence dentro de 20 min vuelve en esta sesión
 
@@ -44,7 +45,10 @@ export function ReviewSessionPage() {
     return Object.fromEntries(GRADES.map((g) => [g.grade, formatInterval(now, preview[g.grade].card.due)])) as Record<Grade, string>
   }, [current])
 
-  const reveal = useCallback(() => setRevealed(true), [])
+  const reveal = useCallback(() => {
+    playSound('flip')
+    setRevealed(true)
+  }, [])
 
   const rate = useCallback(
     async (grade: Grade) => {
@@ -66,6 +70,7 @@ export function ReviewSessionPage() {
         again: s.again + (grade === Rating.Again ? 1 : 0),
         uniques: new Set(s.uniques).add(current.id),
       }))
+      playSound(rest.length === 0 ? 'complete' : grade === Rating.Again ? 'again' : 'correct')
       setQueue(rest)
       setRevealed(false)
       shownAt.current = Date.now()
