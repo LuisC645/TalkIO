@@ -50,7 +50,10 @@ export function PrivacyPage() {
 
       <section>
         <h2>Cuánto tiempo</h2>
-        <p>Mientras tengas tu cuenta. Si pides eliminarla, borramos tus datos de estudio y tu perfil.</p>
+        <p>
+          Mientras tengas tu cuenta. Puedes eliminarla cuando quieras en Ajustes → Eliminar cuenta: se borran al instante tu perfil y todos tus datos de
+          estudio. Solo conservamos, sin tu nombre ni tu email, el recuento de uso de la IA (cantidad de texto procesado), para medir costos.
+        </p>
       </section>
 
       <section>

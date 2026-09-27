@@ -258,6 +258,21 @@ body {
 .animate-stagger > :nth-child(6) { animation-delay: 300ms; }
 .animate-stagger > :nth-child(n + 7) { animation-delay: 360ms; }
 
+/* Fondo de la pantalla de acceso: filas de palabras que pasan en horizontal (dos copias por
+   fila → al llegar a -50% empalma sin salto). Muy lento y solo transform. */
+@keyframes wall-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.wall-row {
+  animation: wall-scroll var(--wall-duration, 160s) linear infinite;
+  will-change: transform;
+}
+
 /* Cambio de pantalla: frecuente → solo opacidad, corto */
 @keyframes fade {
   from {
@@ -356,6 +371,9 @@ body {
 
 /* Movimiento reducido: menos y más suave, no cero. Se conserva la opacidad. */
 @media (prefers-reduced-motion: reduce) {
+  .wall-row {
+    animation: none;
+  }
   .animate-enter,
   .animate-stagger > * {
     animation-name: fade;

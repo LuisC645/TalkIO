@@ -8,6 +8,7 @@ import { CheckIcon } from '@/components/ui/icons'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useProfile } from '@/features/auth/hooks/useProfile'
+import { DeleteAccount } from '@/features/settings/components/DeleteAccount'
 import { DevPanel } from '@/features/settings/components/DevPanel'
 import { cn } from '@/lib/cn'
 import { DEV_TOOLS, isAdmin } from '@/lib/devTools'
@@ -25,7 +26,8 @@ const USERNAME_RE = /^[a-z0-9_.]{3,20}$/
 /**
  * Ajustes estilo iOS: listas agrupadas. Nombre y tiempo por sesión (con su meta en XP) se guardan
  * al cambiarlos (con confirmación "Guardado"). La apariencia sigue al sistema por defecto.
- * Cerrar sesión es destructivo: texto rojo y confirmación en dos pasos.
+ * Cerrar sesión es destructivo: texto rojo y confirmación en dos pasos. Eliminar la cuenta pide
+ * además deslizar para confirmar.
  */
 export function SettingsPage() {
   const { data: profile } = useProfile()
@@ -285,6 +287,8 @@ export function SettingsPage() {
           )}
         </Row>
       </GroupedList>
+
+      <DeleteAccount />
     </div>
   )
 }
