@@ -39,17 +39,18 @@ export function LandingPage() {
   return (
     <div className="relative min-h-dvh bg-bg">
       {/* Efecto de borde de desplazamiento: el contenido se desvanece bajo la barra
-          en lugar de chocar con ella (liquid-glass.md › Review checklist, 6) */}
+          en lugar de chocar con ella (liquid-glass.md › Review checklist, 6). Fondo sólido + máscara
+          (70 % arriba, como antes): Safari usa ese color para la zona de la Dynamic Island. */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-20 h-24 bg-gradient-to-b from-bg/70 to-transparent backdrop-blur-[2px] [mask-image:linear-gradient(to_bottom,black_30%,transparent)]"
+        className="pointer-events-none fixed inset-x-0 top-0 z-20 h-24 bg-bg backdrop-blur-[2px] [mask-image:linear-gradient(to_bottom,rgb(0_0_0/0.7)_30%,transparent)]"
       />
 
       {/* Barra de navegación: Liquid Glass flotante, capa funcional */}
       <header className="fixed inset-x-0 top-3 z-30 px-3 sm:top-4 sm:px-6">
         <nav
           aria-label="Principal"
-          className="glass mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 rounded-full pr-2.5 pl-5 sm:pl-6"
+          className="glass glass-nav mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 rounded-full pr-2.5 pl-5 sm:pl-6"
         >
           <a href="#inicio" className="flex items-center self-stretch rounded-full" aria-label="TalkIO, inicio">
             <Wordmark size="lg" />

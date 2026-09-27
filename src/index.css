@@ -57,6 +57,8 @@
      blur 20–40px, relleno 60–80%, saturación 1.2–1.5×, borde translúcido de 1px */
   --glass-fill: light-dark(rgb(255 255 255 / 0.6), rgb(30 30 32 / 0.55));
   --glass-fill-thick: light-dark(rgb(255 255 255 / 0.74), rgb(30 30 32 / 0.68));
+  /* Barras de navegación: más transparentes (se ve más el contenido que pasa por debajo) */
+  --glass-fill-nav: light-dark(rgb(255 255 255 / 0.36), rgb(30 30 32 / 0.34));
   --glass-border: light-dark(rgb(255 255 255 / 0.75), rgb(255 255 255 / 0.14));
   --glass-highlight: light-dark(rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.18));
   --glass-shadow: light-dark(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.45));
@@ -200,11 +202,20 @@ body {
   backdrop-filter: blur(24px) saturate(1.4);
 }
 
+/* Barras de navegación (se combina con .glass o .glass-bar): relleno más transparente y un
+   poco más de desenfoque para que las etiquetas sigan legibles. Fuera de capas → gana a la utilidad. */
+.glass-nav {
+  background: var(--glass-fill-nav);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+}
+
 /* Reducir transparencia → opaco; más contraste → borde marcado */
 @media (prefers-reduced-transparency: reduce) {
   .glass-bar,
   .glass,
-  .glass-thick {
+  .glass-thick,
+  .glass-nav {
     background: var(--surface);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -213,7 +224,8 @@ body {
 @media (prefers-contrast: more) {
   .glass-bar,
   .glass,
-  .glass-thick {
+  .glass-thick,
+  .glass-nav {
     background: var(--surface);
     border-color: var(--field-border);
   }

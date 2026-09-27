@@ -66,8 +66,9 @@ export function Drawer({
         data-closing={closing || undefined}
         className={cn(
           'drawer glass-thick absolute flex flex-col overflow-hidden outline-none',
-          // móvil: hoja inferior con asa; md+: cajón flotante a la derecha
-          'inset-x-0 bottom-0 max-h-[85dvh] rounded-t-[28px] pb-[env(safe-area-inset-bottom)]',
+          // móvil: hoja inferior con asa que continúa 48px bajo el borde de la pantalla (sin borde
+          // ni barra visible abajo, también tras la barra de Safari); misma altura visible (85dvh)
+          'inset-x-0 -bottom-12 max-h-[calc(85dvh+3rem)] rounded-t-[28px] max-md:!border-x-0 max-md:!border-b-0 pb-[calc(3rem+env(safe-area-inset-bottom))]',
           'md:inset-x-auto md:top-4 md:right-4 md:bottom-4 md:max-h-none md:w-[24rem] md:rounded-[28px] md:pb-0',
         )}
       >

@@ -50,7 +50,7 @@ export function AppLayout() {
       {/* ── Escritorio / tablet ancho: barra superior ── */}
       <header
         className={cn(
-          'glass-bar sticky top-0 z-30 hidden border-b transition-[border-color] duration-200 md:block',
+          'glass-bar glass-nav sticky top-0 z-30 hidden border-b transition-[border-color] duration-200 md:block',
           scrolled ? 'border-separator' : 'border-transparent',
         )}
       >
@@ -101,18 +101,20 @@ export function AppLayout() {
         </div>
       </header>
 
-      {/* Móvil: borde de desplazamiento; el contenido se desvanece bajo la barra en vez de chocar */}
+      {/* Móvil: borde de desplazamiento; el contenido se desvanece bajo la barra en vez de chocar.
+          Fondo sólido del color de la página + máscara (no un degradado): Safari toma el color
+          de fondo del elemento fijo que toca el borde superior para pintar la Dynamic Island. */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[calc(6rem+env(safe-area-inset-top))] bg-gradient-to-b from-bg-grouped from-40% to-transparent md:hidden"
+        className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[calc(2.25rem+env(safe-area-inset-top))] bg-bg-grouped [mask-image:linear-gradient(to_bottom,black_45%,transparent)] md:hidden"
       />
 
       {/* ── Móvil: barra de pestañas flotante, fija arriba ── */}
       <nav
         aria-label="Secciones"
-        className="fixed inset-x-0 top-0 z-30 flex justify-center px-4 pt-[calc(1rem+env(safe-area-inset-top))] md:hidden"
+        className="fixed inset-x-0 top-[calc(1rem+env(safe-area-inset-top))] z-30 flex justify-center px-4 md:hidden"
       >
-        <ul className="glass grid h-16 w-full max-w-lg grid-cols-5 rounded-full p-1">
+        <ul className="glass glass-nav grid h-16 w-full max-w-lg grid-cols-5 rounded-full p-1">
           {NAV.map(({ to, label, icon: Icon }) => (
             <li key={to}>
               <NavLink
