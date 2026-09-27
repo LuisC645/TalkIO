@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/cn'
 
 const CLOSE_MS = 240
 
 /**
- * Cajón (Liquid Glass grueso): sube desde abajo en móvil y entra por la derecha desde md.
+ * Panel (Liquid Glass grueso): en móvil, tarjeta flotante que nace del botón que la abre;
+ * desde md, cajón que entra por la derecha.
  * Se cierra con el botón del contenido, tocando fuera o con Escape; la salida es más corta
  * que la entrada. `children` recibe `dismiss` para cerrar con animación.
  */
@@ -13,11 +14,14 @@ export function Drawer({
   open,
   onClose,
   label,
+  origin = 'top center',
   children,
 }: {
   open: boolean
   onClose: () => void
   label: string
+  /** Móvil: punto desde el que nace la tarjeta (el botón que la abre), p. ej. "30px 16px" */
+  origin?: string
   children: (dismiss: () => void) => ReactNode
 }) {
   const [closing, setClosing] = useState(false)
@@ -56,7 +60,7 @@ export function Drawer({
   if (!open) return null
   return createPortal(
     <div className="fixed inset-0 z-50">
-      <div data-closing={closing || undefined} onClick={dismiss} className="backdrop absolute inset-0 bg-black/30" />
+      <div data-closing={closing || undefined} onClick={dismiss} className="backdrop absolute inset-0 bg-black/25 backdrop-blur-[3px]" />
       <div
         ref={panelRef}
         role="dialog"
@@ -66,13 +70,12 @@ export function Drawer({
         data-closing={closing || undefined}
         className={cn(
           'drawer glass-thick absolute flex flex-col overflow-hidden outline-none',
-          // móvil: hoja inferior con asa que continúa 48px bajo el borde de la pantalla (sin borde
-          // ni barra visible abajo, también tras la barra de Safari); misma altura visible (85dvh)
-          'inset-x-0 -bottom-12 max-h-[calc(85dvh+3rem)] rounded-t-[28px] max-md:!border-x-0 max-md:!border-b-0 pb-[calc(3rem+env(safe-area-inset-bottom))]',
-          'md:inset-x-auto md:top-4 md:right-4 md:bottom-4 md:max-h-none md:w-[24rem] md:rounded-[28px] md:pb-0',
+          // móvil: tarjeta flotante con margen arriba (16px) y a los lados (12px), esquinas redondeadas
+          'inset-x-3 top-[calc(env(safe-area-inset-top)+1rem)] max-h-[calc(88dvh-env(safe-area-inset-top))] rounded-[28px]',
+          'md:inset-x-auto md:top-4 md:right-4 md:bottom-4 md:max-h-none md:w-[24rem]',
         )}
+        style={{ '--drawer-origin': origin } as CSSProperties}
       >
-        <span aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-label-3/50 md:hidden" />
         {children(dismiss)}
       </div>
     </div>,
