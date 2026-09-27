@@ -3,7 +3,7 @@ import { PanelHeader } from '@/components/ui/PanelHeader'
 import { Spinner } from '@/components/ui/Spinner'
 import { cn } from '@/lib/cn'
 import { useUiStore } from '@/stores/uiStore'
-import { useMarkRead, useNotifications, type AppNotification } from './api'
+import { useDismissNotification, useMarkRead, useNotifications, type AppNotification } from './api'
 
 const ICON: Record<string, string> = {
   streak_risk: '🔥',
@@ -32,6 +32,7 @@ function when(iso: string) {
 export function NotificationsPanel({ onClose, className }: { onClose?: () => void; className?: string }) {
   const { data, isPending } = useNotifications()
   const markRead = useMarkRead()
+  const dismiss = useDismissNotification()
   const navigate = useNavigate()
   const openPanel = useUiStore((s) => s.openPanel)
   const unread = (data ?? []).filter((n) => !n.read_at)
@@ -77,8 +78,8 @@ export function NotificationsPanel({ onClose, className }: { onClose?: () => voi
           </p>
         ) : (
           <>
-            {unread.length > 0 && <List title="Nuevas" items={unread} onOpen={open} />}
-            {earlier.length > 0 && <List title="Anteriores" items={earlier} onOpen={open} />}
+            {unread.length > 0 && <List title="Nuevas" items={unread} onOpen={open} onDismiss={(id) => dismiss.mutate(id)} />}
+            {earlier.length > 0 && <List title="Anteriores" items={earlier} onOpen={open} onDismiss={(id) => dismiss.mutate(id)} />}
           </>
         )}
       </div>
@@ -86,17 +87,27 @@ export function NotificationsPanel({ onClose, className }: { onClose?: () => voi
   )
 }
 
-function List({ title, items, onOpen }: { title: string; items: AppNotification[]; onOpen: (n: AppNotification) => void }) {
+function List({
+  title,
+  items,
+  onOpen,
+  onDismiss,
+}: {
+  title: string
+  items: AppNotification[]
+  onOpen: (n: AppNotification) => void
+  onDismiss: (id: string) => void
+}) {
   return (
     <section>
       <h3 className="px-5 pt-3 pb-1 text-footnote font-medium text-label-2">{title}</h3>
       <ul>
         {items.map((n) => (
-          <li key={n.id} className="group/row relative">
+          <li key={n.id} className="group/row relative flex items-start">
             <button
               type="button"
               onClick={() => onOpen(n)}
-              className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-fill/50"
+              className="flex min-w-0 flex-1 items-start gap-3 py-3 pr-1 pl-4 text-left transition-colors duration-150 hover:bg-fill/50"
             >
               <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-fill text-[1.0625rem]">
                 {ICON[n.kind] ?? 'ℹ️'}
@@ -107,6 +118,18 @@ function List({ title, items, onOpen }: { title: string; items: AppNotification[
                 <span className="mt-0.5 block text-footnote text-label-3">{when(n.created_at)}</span>
               </span>
               {!n.read_at && <span aria-label="No leída" className="mt-2 size-2.5 shrink-0 rounded-full bg-accent" />}
+            </button>
+            {/* Descartar: no se vuelve a mostrar (ni se repite en la próxima sincronización) */}
+            <button
+              type="button"
+              onClick={() => onDismiss(n.id)}
+              aria-label={`Eliminar notificación: ${n.title}`}
+              title="Eliminar"
+              className="mt-2.5 mr-2 flex size-8 shrink-0 items-center justify-center rounded-full text-label-3 transition-[background-color,color,transform] duration-150 ease-out hover:bg-fill hover:text-label active:scale-[0.94]"
+            >
+              <svg aria-hidden viewBox="0 0 20 20" className="size-3.5 fill-none stroke-current stroke-2">
+                <path d="m6 6 8 8M14 6l-8 8" strokeLinecap="round" />
+              </svg>
             </button>
             <span aria-hidden className="absolute right-0 bottom-0 left-16 h-px bg-separator group-last/row:hidden" />
           </li>

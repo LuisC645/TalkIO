@@ -29,6 +29,7 @@ export function useNotifications() {
       const { data, error } = await supabase
         .from('notifications')
         .select('id, kind, title, body, link, read_at, created_at')
+        .is('dismissed_at', null)
         .order('created_at', { ascending: false })
         .limit(50)
       if (error) throw error
@@ -51,6 +52,28 @@ export function useMarkRead() {
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  })
+}
+
+/** Descarta una notificación (la ✕): desaparece de la lista y no se vuelve a crear */
+export function useDismissNotification() {
+  const queryClient = useQueryClient()
+  const userId = useAuthStore((s) => s.user?.id)
+  const key = ['notifications', userId]
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('notifications').update({ dismissed_at: new Date().toISOString() }).eq('id', id)
+      if (error) throw error
+    },
+    // Se quita de la lista al instante; si falla, vuelve
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<AppNotification[]>(key)
+      queryClient.setQueryData<AppNotification[]>(key, (list) => list?.filter((n) => n.id !== id))
+      return { previous }
+    },
+    onError: (_err, _id, ctx) => ctx?.previous && queryClient.setQueryData(key, ctx.previous),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   })
 }
 
