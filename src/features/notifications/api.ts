@@ -102,7 +102,7 @@ export function useNotificationSync() {
     const shown = readShown()
     const fresh = list.filter((n) => !n.read_at && !shown.has(n.id) && Date.now() - new Date(n.created_at).getTime() < 86_400_000)
     for (const n of fresh.slice(0, 3)) {
-      const notification = new Notification(n.title, { body: n.body ?? undefined, tag: n.id, icon: '/favicon.svg' })
+      const notification = new Notification(n.title, { body: n.body ?? undefined, tag: n.id, icon: '/icon-192.png' })
       notification.onclick = () => {
         window.focus()
         if (n.link) window.location.assign(n.link)
