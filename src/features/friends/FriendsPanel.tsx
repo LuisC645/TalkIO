@@ -11,7 +11,7 @@ import { useAddFriend, useFriendRequests, useFriends, useRemoveFriend, useRespon
  * la rechaza. Aceptada, los dos ven la racha y el nivel del otro (solo eso). Quitar un amigo
  * pide confirmación (el botón cambia a "¿Quitar?" y se confirma con un segundo toque).
  * Se usa en el panel lateral del Progreso y en el cajón que abre el botón de amigos; `friendsOnly`
- * (panel del Progreso) deja solo los amigos actuales: agregar y las solicitudes van en el cajón del banner.
+ * (panel del Progreso) deja solo los amigos actuales: tu usuario, agregar y las solicitudes van en el cajón del banner.
  */
 export function FriendsPanel({
   onClose,
@@ -66,8 +66,8 @@ export function FriendsPanel({
     <div className={cn('flex min-h-0 flex-col', className)}>
       <PanelHeader title="Amigos" onClose={onClose} subtitle={summary || 'Mira la racha y el nivel de tus amigos.'} />
 
-      {/* Tu usuario: lo que compartes para que te agreguen (en PC sin botón de copiar) */}
-      {profile?.username && (
+      {/* Tu usuario: lo que compartes para que te agreguen */}
+      {!friendsOnly && profile?.username && (
         <div className="mx-5 mb-3 flex items-center gap-3 rounded-2xl bg-fill px-4 py-2.5">
           <span className="min-w-0 flex-1">
             <span className="block text-footnote text-label-2">Tu usuario</span>
@@ -76,7 +76,7 @@ export function FriendsPanel({
           <button
             type="button"
             onClick={copyUsername}
-            className="min-h-9 shrink-0 rounded-full px-3 text-footnote font-semibold text-link transition-[background-color,transform] duration-150 ease-out hover:bg-surface active:scale-[0.97] md:hidden"
+            className="min-h-9 shrink-0 rounded-full px-3 text-footnote font-semibold text-link transition-[background-color,transform] duration-150 ease-out hover:bg-surface active:scale-[0.97]"
           >
             {copied ? 'Copiado' : 'Copiar'}
           </button>
