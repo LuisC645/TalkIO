@@ -57,9 +57,9 @@ export function FriendsPanel({ onClose, className }: { onClose?: () => void; cla
     <div className={cn('flex min-h-0 flex-col', className)}>
       <PanelHeader title="Amigos" onClose={onClose} subtitle={summary || 'Mira la racha y el nivel de tus amigos.'} />
 
-      {/* Tu usuario: lo que compartes para que te agreguen (solo en móvil; en PC el panel es para ver amigos) */}
+      {/* Tu usuario: lo que compartes para que te agreguen (en PC sin botón de copiar) */}
       {profile?.username && (
-        <div className="mx-5 mb-3 flex items-center gap-3 rounded-2xl bg-fill px-4 py-2.5 md:hidden">
+        <div className="mx-5 mb-3 flex items-center gap-3 rounded-2xl bg-fill px-4 py-2.5">
           <span className="min-w-0 flex-1">
             <span className="block text-footnote text-label-2">Tu usuario</span>
             <span className="block truncate text-callout font-semibold">@{profile.username}</span>
@@ -67,7 +67,7 @@ export function FriendsPanel({ onClose, className }: { onClose?: () => void; cla
           <button
             type="button"
             onClick={copyUsername}
-            className="min-h-9 shrink-0 rounded-full px-3 text-footnote font-semibold text-link transition-[background-color,transform] duration-150 ease-out hover:bg-surface active:scale-[0.97]"
+            className="min-h-9 shrink-0 rounded-full px-3 text-footnote font-semibold text-link transition-[background-color,transform] duration-150 ease-out hover:bg-surface active:scale-[0.97] md:hidden"
           >
             {copied ? 'Copiado' : 'Copiar'}
           </button>
